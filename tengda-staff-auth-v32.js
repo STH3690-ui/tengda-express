@@ -1,5 +1,4 @@
-
-/* Teng Da staff username login + registration enhancement; test branch only */
+/* Teng Da account username login + registration enhancement; test branch only */
 (function(){
   const domain='@staff.tengda.example.com';
   const emailFor=x=>x.includes('@')?x:x.toLowerCase()+domain;
@@ -8,9 +7,9 @@
   if(!reg||!login)return;
   const emailField=reg.querySelector('[name=email]');
   if(emailField){emailField.outerHTML='<label>用户名（英文字母、数字、下划线）</label><input name="username" required pattern="[A-Za-z0-9_]{3,30}" minlength="3" maxlength="30" autocapitalize="none"><label>联系电话</label><input name="contact_phone" type="tel" required maxlength="30">';}
-  const note=reg.querySelector('.muted');if(note)note.textContent='员工无需邮箱，提交申请后由老板审批。';
+  const note=reg.querySelector('.muted');if(note)note.textContent='无需邮箱，提交申请后由管理员审批。';
   const loginInput=login.querySelector('[name=email]');
-  if(loginInput){loginInput.type='text';loginInput.previousElementSibling.textContent='用户名或老板邮箱';}
+  if(loginInput){loginInput.type='text';loginInput.previousElementSibling.textContent='用户名或邮箱';}
   reg.addEventListener('submit',async function(e){
     e.preventDefault();e.stopImmediatePropagation();
     const btn=reg.querySelector('button');btn.disabled=true;
@@ -22,14 +21,11 @@
       const {data,error}=await db.auth.signUp({email:emailFor(username),password:String(f.get('password')),options:{data:{display_name,username,contact_phone:phone}}});
       if(error)throw error;
       if(!data?.user)throw Error('注册未返回用户');
-      reg.reset();
-reg.classList.add('hidden');
-
-const msg = document.createElement('div');
-msg.setAttribute('role', 'status');
-msg.style.cssText = 'padding:20px;text-align:center;color:#176a3a;font-size:20px;font-weight:bold';
-msg.textContent = '✓ 申请成功，待批准';
-reg.insertAdjacentElement('afterend', msg);
+      reg.reset();reg.classList.add('hidden');
+      const previous=reg.parentElement.querySelector('[data-registration-success]');if(previous)previous.remove();
+      const msg=document.createElement('div');msg.setAttribute('role','status');msg.setAttribute('data-registration-success','');
+      msg.style.cssText='padding:20px;text-align:center;color:#176a3a;font-size:20px;font-weight:bold';
+      msg.textContent='✓ 申请成功，待批准';reg.insertAdjacentElement('afterend',msg);
       if(data.session)await db.auth.signOut();
     }catch(err){alert('申请失败：'+err.message)}finally{btn.disabled=false;}
   },true);
