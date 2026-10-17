@@ -137,4 +137,4 @@ async function addOrderPhotos(id){const files=Array.from($('moreOrderPhotos').fi
 function initSign(){let c=$('sign');if(!c)return;let r=c.getBoundingClientRect();c.width=Math.max(250,Math.floor(r.width));c.height=130;let ctx=c.getContext('2d');ctx.lineWidth=2.5;ctx.lineCap='round';let down=false,strokes=[],stroke=[];const pt=e=>{let b=c.getBoundingClientRect();return [Math.round((e.clientX-b.left)*c.width/b.width),Math.round((e.clientY-b.top)*c.height/b.height)]};c.onpointerdown=e=>{down=true;stroke=[pt(e)];ctx.beginPath();ctx.moveTo(...stroke[0]);c.setPointerCapture(e.pointerId)};c.onpointermove=e=>{if(!down)return;let p=pt(e);stroke.push(p);ctx.lineTo(...p);ctx.stroke()};c.onpointerup=()=>{if(!down)return;down=false;strokes.push(stroke);signature=JSON.stringify(strokes)};}
 function clearSign(){signature='';initSign()}
 connect();
-</script></body></html>
+</script></body></html><script src="./tengda-staff-auth-v32.js"></script>
