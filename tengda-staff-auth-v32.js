@@ -22,7 +22,14 @@
       const {data,error}=await db.auth.signUp({email:emailFor(username),password:String(f.get('password')),options:{data:{display_name,username,contact_phone:phone}}});
       if(error)throw error;
       if(!data?.user)throw Error('注册未返回用户');
-      alert('申请已提交，请等待老板批准。');reg.reset();reg.classList.add('hidden');
+      reg.reset();
+reg.classList.add('hidden');
+
+const msg = document.createElement('div');
+msg.setAttribute('role', 'status');
+msg.style.cssText = 'padding:20px;text-align:center;color:#176a3a;font-size:20px;font-weight:bold';
+msg.textContent = '✓ 申请成功，待批准';
+reg.insertAdjacentElement('afterend', msg);
       if(data.session)await db.auth.signOut();
     }catch(err){alert('申请失败：'+err.message)}finally{btn.disabled=false;}
   },true);
