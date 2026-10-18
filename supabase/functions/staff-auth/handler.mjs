@@ -51,6 +51,38 @@ export function createHandler({ createClient, env, randomUUID = () => crypto.ran
         check(!memberError && member?.active === true, INVALID_LOGIN, 401);
         return reply(200, { ok: true, session: { access_token: signedIn.session.access_token, refresh_token: signedIn.session.refresh_token } });
       }
+      if (body.action === 'register') {
+        check(USERNAME.test(username), '用户名须为3–30位英文字母、数字或下划线');
+        const displayName = typeof body.display_name === 'string' ? body.display_name.trim() : '';
+        const phone = typeof body.contact_phone === 'string' ? body.contact_phone.trim() : '';
+        const contactEmail = typeof body.email === 'string' ? body.email.trim() : '';
+        check(displayName.length > 0 && displayName.length <= 60 && phone.length <= 30, '姓名或联系电话格式错误');
+        check(!contactEmail || (contactEmail.length <= 254 && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(contactEmail)), '邮箱格式错误');
+        check(typeof body.password === 'string' && body.password.length >= 12 && body.password.length <= 128, '密码长度须为12–128位');
+        const ip = (request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim();
+        const { data: allowed, error: limiterError } = await admin.rpc('td_login_attempt_v32', { p_login: 'register:' + ip });
+        check(!limiterError, '注册服务暂不可用', 503);
+        check(allowed === true, '申请过于频繁，请15分钟后重试', 429);
+        const { data: existing, error: existingError } = await admin.from('td_members').select('id').eq('username', username).maybeSingle();
+        check(!existingError, '注册服务暂不可用', 503);
+        check(!existing, '用户名已被使用', 409);
+        const { data: created, error: creationError } = await admin.auth.admin.createUser({
+          email: `${randomUUID()}@${env('TD_TEST_PROJECT_REF')}.supabase.co`,
+          password: body.password, email_confirm: true, ban_duration: '876000h',
+          user_metadata: { display_name: displayName },
+        });
+        check(!creationError && created?.user, '注册失败，请检查密码要求', 409);
+        const { error: profileError } = await admin.from('td_members').upsert({
+          id: created.user.id, username, display_name: displayName,
+          contact_email: contactEmail || null, contact_phone: phone,
+          role: 'staff', active: false,
+        }, { onConflict: 'id' });
+        if (profileError) {
+          await admin.auth.admin.deleteUser(created.user.id);
+          throw new HttpError(409, '注册失败，用户名可能已存在，请更换后重试');
+        }
+        return reply(201, { ok: true, message: '注册申请已提交，请等待管理员审核' });
+      }
       check(['create', 'set-active'].includes(body.action), '未知操作');
       const authorization = request.headers.get('authorization') || '';
       check(/^Bearer \S+$/.test(authorization), '请先以管理员身份登录', 401);
