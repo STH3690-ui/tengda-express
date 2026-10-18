@@ -215,5 +215,5 @@ async function tdRepay(batch,maxDue){
 
 
 // When focusing a numeric field whose default is zero, select/clear the placeholder zero.
-document.addEventListener('focusin',event=>{const el=event.target;if(!(el instanceof HTMLInputElement)||el.type!=='number'||el.readOnly||el.disabled)return;if(/^0(?:\\.0+)?$/.test(el.value)){el.value='';}});
+document.addEventListener('focusin',event=>{const el=event.target;if(!(el instanceof HTMLInputElement)||el.type!=='number'||el.readOnly||el.disabled)return;if(Number(el.value)===0 && el.value.trim()!==''){el.value='';}});
 </script><script src="./tengda-staff-auth-v32.js"></script></body>
