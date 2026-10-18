@@ -25,7 +25,7 @@ let db=null,user=null,role='',data={td_customers:[],td_orders:[],td_parcels:[],t
 const $=id=>document.getElementById(id),esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=x=>Number(x||0).toLocaleString('en-US',{maximumFractionDigits:2}),date=x=>x?new Date(x).toLocaleString('zh-CN'):'';
 const name=id=>data.td_customers.find(x=>x.id===id)?.name||'未知客户';const opt=(items,fn)=>items.filter(x=>!x.deleted_at&&!archivedCustomers.has(x.id)).map(x=>`<option value="${esc(x.id)}">${esc(fn(x))}</option>`).join('');
 function notify(s,err=false){$('msg').textContent=s;$('msg').classList.remove('hidden');$('msg').style.background=err?'#ffe8e8':'#fff4cf';window.scrollTo({top:0,behavior:'smooth'});}
-const TD_SUPABASE_URL='https://amknufdvqfhrgtobpwg.supabase.co';
+const TD_SUPABASE_URL='https://amknufvdvqfhrgtobpwg.supabase.co';
 const TD_SUPABASE_PUBLISHABLE_KEY='sb_publishable_3KWC1WS3zC_CRUAGlKn4Rg_RmtQrZDn';
 async function connect(){
  if(!window.supabase){notify('无法加载登录服务，请检查网络后刷新。',true);return;}
@@ -36,6 +36,33 @@ async function connect(){
  if(error)notify('会话检查失败：'+error.message,true);
  if(session){user=session.user;await enter();}else $('auth').classList.remove('hidden');
 }
+async function tdDiagnose(){
+ const el=document.getElementById('td-diag-output');
+ el.textContent='正在检测登录接口…';
+ const url=TD_SUPABASE_URL+'/auth/v1/health';
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),12000);
+ try{
+  const response=await fetch(url,{headers:{apikey:TD_SUPABASE_PUBLISHABLE_KEY},signal:controller.signal,cache:'no-store'});
+  const raw=(await response.text()).slice(0,280);
+  el.textContent='Supabase 登录接口 HTTP '+response.status+'\\n'+raw+'\\n'+(response.ok?'接口可以响应。下一步检查登录凭据或员工权限。':'接口返回错误，请把本页截图发我。');
+ }catch(err){
+  el.textContent='连接失败：'+(err?.name==='AbortError'?'12 秒超时':String(err?.message||err))+'\\n请截图发我；不用修改账户密码。';
+ }finally{clearTimeout(timer);}
+}
+document.addEventListener('DOMContentLoaded',()=>{
+ const form=document.getElementById('loginForm');
+ if(!form||document.getElementById('td-diag-btn'))return;
+ const wrap=document.createElement('div');
+ wrap.style.cssText='margin-top:16px;padding:12px;border:1px solid #d6d6d6;border-radius:12px;background:#fff';
+ const btn=document.createElement('button');
+ btn.type='button';btn.id='td-diag-btn';btn.textContent='检测数据库连接（无需登录）';
+ btn.style.cssText='padding:10px 12px;border-radius:8px;background:#202020;color:#ffce52;border:0';
+ btn.addEventListener('click',tdDiagnose);
+ const output=document.createElement('pre');output.id='td-diag-output';
+ output.style.cssText='white-space:pre-wrap;word-break:break-word;font-size:12px;margin:10px 0 0;color:#333';
+ wrap.append(btn,output);form.insertAdjacentElement('afterend',wrap);
+});
 function toggleRegister(){$('registerForm').classList.toggle('hidden')}
 $('registerForm').addEventListener('submit',async e=>{e.preventDefault();const btn=e.target.querySelector('button');btn.disabled=true;try{const f=new FormData(e.target);const {data:d,error}=await db.auth.signUp({email:String(f.get('email')).trim(),password:String(f.get('password')),options:{data:{display_name:String(f.get('display_name')).trim()}}});if(error)throw error;notify('申请成功，待批准');e.target.reset();e.target.classList.add('hidden');if(d.session){await db.auth.signOut();user=null;}}catch(err){notify('创建账户失败：'+err.message,true)}finally{btn.disabled=false}});
 $('loginForm').addEventListener('submit' ,async e=>{
@@ -51,7 +78,7 @@ $('loginForm').addEventListener('submit' ,async e=>{
   if(!d?.user)throw new Error('登录未返回用户信息');
   user=d.user;
   await Promise.race([enter(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('登录后读取权限超时，请检查 td_members 表和网络')),15000))]);
- }catch(err){notify('登录失败：'+(err?.message||String(err)),true);$('auth').classList.remove('hidden');}
+ }catch(err){notify('登录失败：'+(err?.message||String(err))+'。请点击下方“检测数据库连接”并截图。',true);$('auth').classList.remove('hidden');}
  finally{btn.disabled=false;btn.textContent='登录';}
 });
 async function enter(){let {data:m,error}=await db.from('td_members').select('role,active,display_name').eq('id',user.id).maybeSingle();if(error||!m||!m.active){await db.auth.signOut();user=null;return notify('账号尚未获批准或已停用，请联系管理员。'+(error?' '+error.message:''),true)}role=m.role;$('who').textContent=`${m.display_name||user.email} · 云端在线`;$('auth').classList.add('hidden');$('app').classList.remove('hidden');await refresh();}
