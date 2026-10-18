@@ -1,0 +1,7 @@
+{
+  "name": "tengda-express-v32",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test --test-isolation=none tests/*.test.mjs", "check": "node --check tengda-staff-auth-v32.js && node --check supabase/functions/staff-auth/handler.mjs" },
+  "engines": { "node": ">=22" }
+}

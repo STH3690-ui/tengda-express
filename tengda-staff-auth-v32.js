@@ -1,43 +1,59 @@
-/* Teng Da account username login + registration enhancement; test branch only */
-(function(){
-  const domain='@staff.tengda.example.com';
-  const emailFor=x=>x.includes('@')?x:x.toLowerCase()+domain;
-  const reg=document.getElementById('registerForm');
-  const login=document.getElementById('loginForm');
-  if(!reg||!login)return;
-  const emailField=reg.querySelector('[name=email]');
-  if(emailField){emailField.outerHTML='<label>用户名（英文字母、数字、下划线）</label><input name="username" required pattern="[A-Za-z0-9_]{3,30}" minlength="3" maxlength="30" autocapitalize="none"><label>联系电话</label><input name="contact_phone" type="tel" required maxlength="30">';}
-  const note=reg.querySelector('.muted');if(note)note.textContent='无需邮箱，提交申请后由管理员审批。';
-  const loginInput=login.querySelector('[name=email]');
-  if(loginInput){loginInput.type='text';loginInput.previousElementSibling.textContent='用户名或邮箱';}
-  reg.addEventListener('submit',async function(e){
-    e.preventDefault();e.stopImmediatePropagation();
-    const btn=reg.querySelector('button');btn.disabled=true;
-    try{
-      if(!window.db && typeof db==='undefined')throw Error('数据库未连接');
-      const f=new FormData(reg),username=String(f.get('username')||'').trim().toLowerCase(),phone=String(f.get('contact_phone')||'').trim(),display_name=String(f.get('display_name')||'').trim();
-      if(!/^[a-z0-9_]{3,30}$/.test(username))throw Error('用户名只能使用3–30位英文字母、数字或下划线');
-      if(!phone||!display_name)throw Error('请填写姓名和联系电话');
-      const {data,error}=await db.auth.signUp({email:emailFor(username),password:String(f.get('password')),options:{data:{display_name,username,contact_phone:phone}}});
-      if(error)throw error;
-      if(!data?.user)throw Error('注册未返回用户');
-      reg.reset();reg.classList.add('hidden');
-      const previous=reg.parentElement.querySelector('[data-registration-success]');if(previous)previous.remove();
-      const msg=document.createElement('div');msg.setAttribute('role','status');msg.setAttribute('data-registration-success','');
-      msg.style.cssText='padding:20px;text-align:center;color:#176a3a;font-size:20px;font-weight:bold';
-      msg.textContent='✓ 申请成功，待批准';reg.insertAdjacentElement('afterend',msg);
-      if(data.session)await db.auth.signOut();
-    }catch(err){alert('申请失败：'+err.message)}finally{btn.disabled=false;}
-  },true);
-  login.addEventListener('submit',async function(e){
-    e.preventDefault();e.stopImmediatePropagation();
-    const btn=login.querySelector('button');btn.disabled=true;
-    try{
-      const f=new FormData(login),value=String(f.get('email')||'').trim();
-      const {data,error}=await db.auth.signInWithPassword({email:emailFor(value),password:String(f.get('password'))});
-      if(error)throw error;
-      if(!data?.user)throw Error('登录失败');
-      user=data.user;await enter();
-    }catch(err){alert('登录失败：'+err.message)}finally{btn.disabled=false;}
-  },true);
-})();
+/* Username/password authentication. Privileged operations live in staff-auth. */
+'use strict';
+async function tdStaffRequest(body) {
+  if (!db) throw new Error('登录服务尚未连接');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  let result, error;
+  try { ({ data: result, error } = await db.functions.invoke('staff-auth', { body, signal: controller.signal })); }
+  finally { clearTimeout(timeout); }
+  if (error) {
+    let message = '账号服务请求失败，请确认测试后台已部署并检查网络';
+    try { const response = await error.context?.json(); if (response?.message) message = response.message; } catch {}
+    throw new Error(message);
+  }
+  if (!result?.ok) throw new Error(result?.message || '账号操作失败');
+  return result;
+}
+async function tdStaffLogin(event) {
+  event.preventDefault();
+  const form = event.target, button = form.querySelector('button');
+  button.disabled = true;
+  try {
+    const fields = new FormData(form);
+    const result = await tdStaffRequest({ action: 'login', username: String(fields.get('username') || '').trim(), password: String(fields.get('password') || '') });
+    const { data: signedIn, error } = await db.auth.setSession(result.session);
+    if (error || !signedIn?.user) throw error || new Error('登录未返回用户');
+    user = signedIn.user;
+    await enter();
+    form.reset();
+  } catch (error) {
+    notify('登录失败：' + error.message, true);
+    $('auth').classList.remove('hidden');
+  } finally { button.disabled = false; }
+}
+async function tdCreateStaff(event) {
+  event.preventDefault();
+  if (role !== 'owner') return notify('仅管理员可创建员工账号', true);
+  const form = event.target, button = form.querySelector('button');
+  button.disabled = true;
+  try {
+    const fields = Object.fromEntries(new FormData(form));
+    await tdStaffRequest({ ...fields, action: 'create' });
+    form.reset();
+    notify('员工账号已创建，待管理员批准');
+    await refresh();
+  } catch (error) { notify('创建失败：' + error.message, true); }
+  finally { button.disabled = false; }
+}
+async function tdSetStaffActive(id, active) {
+  if (role !== 'owner') return notify('无权限', true);
+  if (!confirm(active ? '批准这个员工账号？' : '停用这个员工账号？')) return;
+  try {
+    await tdStaffRequest({ action: 'set-active', member_id: id, active });
+    notify(active ? '已批准' : '已停用');
+    await refresh();
+  } catch (error) { notify('操作失败：' + error.message, true); }
+}
+document.getElementById('loginForm').addEventListener('submit', tdStaffLogin);
+connect();
