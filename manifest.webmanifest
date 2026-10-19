@@ -1,0 +1,18 @@
+{
+  "name": "腾达快递站 · TENG DA EXPRESS STATION",
+  "short_name": "腾达快递站",
+  "description": "腾达快递站 V3.2 正式业务管理系统",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f5f7",
+  "theme_color": "#111318",
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
