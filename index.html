@@ -79,33 +79,6 @@ async function connect(){
  if(error)notify('会话检查失败：'+error.message,true);
  if(session){user=session.user;await enter();}else $('auth').classList.remove('hidden');
 }
-async function tdDiagnose(){
- const el=document.getElementById('td-diag-output');
- el.textContent='正在检测登录接口…';
- const url=TD_SUPABASE_URL+'/auth/v1/health';
- const controller=new AbortController();
- const timer=setTimeout(()=>controller.abort(),12000);
- try{
-  const response=await fetch(url,{headers:{apikey:TD_SUPABASE_PUBLISHABLE_KEY},signal:controller.signal,cache:'no-store'});
-  const raw=(await response.text()).slice(0,280);
-  el.textContent='Supabase 登录接口 HTTP '+response.status+'\\n'+raw+'\\n'+(response.ok?'接口可以响应。下一步检查登录凭据或账号权限。':'接口返回错误，请把本页截图发我。');
- }catch(err){
-  el.textContent='连接失败：'+(err?.name==='AbortError'?'12 秒超时':String(err?.message||err))+'\\n请截图发我；不用修改账户密码。';
- }finally{clearTimeout(timer);}
-}
-document.addEventListener('DOMContentLoaded',()=>{
- const form=document.getElementById('loginForm');
- if(!form||document.getElementById('td-diag-btn'))return;
- const wrap=document.createElement('div');
- wrap.style.cssText='margin-top:16px;padding:12px;border:1px solid #d6d6d6;border-radius:12px;background:#fff';
- const btn=document.createElement('button');
- btn.type='button';btn.id='td-diag-btn';btn.textContent='检测数据库连接（无需登录）';
- btn.style.cssText='padding:10px 12px;border-radius:8px;background:#202020;color:#ffce52;border:0';
- btn.addEventListener('click',tdDiagnose);
- const output=document.createElement('pre');output.id='td-diag-output';
- output.style.cssText='white-space:pre-wrap;word-break:break-word;font-size:12px;margin:10px 0 0;color:#333';
- wrap.append(btn,output);form.insertAdjacentElement('afterend',wrap);
-});
 function tdClearSessionView(){canHideOrders=false;hiddenOrderIds=new Set();user=null;role='';page='dashboard';editingCustomerId=null;pickupSelected={};pickupCustomer='';pickupBatches=[];signature='';archivedCustomers=new Set();deletionLogs=[];for(const t of Object.keys(data))data[t]=[];$('app').classList.add('hidden');$('page').innerHTML='';$('nav').innerHTML='';$('auth').classList.remove('hidden');$('who').textContent='云端业务管理 · 手机 / 电脑';}
 let canHideOrders=false;
 async function tdCheckMember(){if(!user)return false;const {data:m,error}=await db.from('td_members').select('role,active,display_name,can_hide_orders').eq('id',user.id).maybeSingle();if(error||!m?.active){tdClearSessionView();await db.auth.signOut();notify('账号尚未通过审核、已停用或权限检查失败，请联系管理员。',true);return false;}role=m.role;canHideOrders=role==='owner'||m.can_hide_orders===true;$('who').textContent=`${m.display_name||user.email} · 云端在线`;return true;}
