@@ -1,3 +1,5 @@
+> 本文为历史测试版记录。最新正式环境部署及验收状态见 [正式发布记录](PRODUCTION_RELEASE_20261019.md)。
+
 # 员工认证 V3.2
 
 本次改动基于 `feature/customer-recycle-bin-v31` 的 `96e1b7e12b429540f1e22892defbd7b7e37a8dda`。只面向 `tengda-v32-test`，没有改动 main 或任何远程数据库。
@@ -32,7 +34,7 @@
 
    ```sql
    set td.environment = 'tengda-v32-test';
-   -- 然后运行 supabase/migrations/202610180001_staff_auth_v32.sql 的完整内容
+   -- 然后运行 supabase/test-migrations/202610180001_staff_auth_v32.sql 的完整内容
    ```
 
    使用 Supabase SQL Editor 或 `psql` 的 `\i` 文件导入；所有字段和权限升级都在事务内。已成功执行的迁移不要重复运行。

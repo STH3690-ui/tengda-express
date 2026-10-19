@@ -1,4 +1,4 @@
-project_id = "tengda-v32-test"
+project_id = "tengda-v32-production"
 
 # Login is public; staff-auth verifies administrator JWTs itself with Auth getUser.
 [functions.staff-auth]

@@ -6,8 +6,12 @@ function check(condition, message, status = 400) { if (!condition) throw new Htt
 export function createHandler({ createClient, env, randomUUID = () => crypto.randomUUID() }) {
   const url = env('SUPABASE_URL'), key = env('SUPABASE_ANON_KEY'), secret = env('SUPABASE_SERVICE_ROLE_KEY');
   const origins = new Set((env('TD_ALLOWED_ORIGINS') || '').split(',').map(x => x.trim()).filter(Boolean));
-  const ready = env('TD_ENVIRONMENT') === 'tengda-v32-test' && env('TD_TEST_PROJECT_REF') &&
-    url === `https://${env('TD_TEST_PROJECT_REF')}.supabase.co` && key && secret && origins.size;
+  const environment = env('TD_ENVIRONMENT');
+  const projectRef = env('TD_PROJECT_REF') || env('TD_TEST_PROJECT_REF');
+  const expectedRef = environment === 'tengda-v32-production' ? 'yvsgawbbnyeyvynwghsc' :
+    environment === 'tengda-v32-test' ? (env('TD_TEST_PROJECT_REF') || 'amknufvdvqfhrgtobpwg') : null;
+  const ready = expectedRef && projectRef === expectedRef &&
+    url === `https://${projectRef}.supabase.co` && key && secret && origins.size;
   return async request => {
     const origin = request.headers.get('origin');
     const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', Vary: 'Origin' };
@@ -20,7 +24,7 @@ export function createHandler({ createClient, env, randomUUID = () => crypto.ran
     if (origin && !origins.has(origin)) return reply(403, { ok: false, message: '来源未授权' });
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
     if (request.method !== 'POST') return reply(405, { ok: false, message: '只接受 POST' });
-    if (!ready) return reply(503, { ok: false, message: '测试账号后台尚未配置完成' });
+    if (!ready) return reply(503, { ok: false, message: '账号后台尚未配置完成' });
     try {
       // Limit bytes before parsing (Content-Length alone is not trustworthy).
       const reader = request.body?.getReader(); let length = 0, chunks = [];
@@ -43,7 +47,7 @@ export function createHandler({ createClient, env, randomUUID = () => crypto.ran
         check(!lookupError, '登录服务暂不可用', 503);
         // Always perform a password verification, including unknown usernames.
         const account = accounts?.[0];
-        const email = account?.auth_email || `${randomUUID()}@${env('TD_TEST_PROJECT_REF')}.supabase.co`;
+        const email = account?.auth_email || `${randomUUID()}@${projectRef}.supabase.co`;
         const auth = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
         const { data: signedIn, error } = await auth.auth.signInWithPassword({ email, password: body.password });
         check(!error && account && signedIn?.session && signedIn?.user?.id === account.id, INVALID_LOGIN, 401);
@@ -57,7 +61,7 @@ export function createHandler({ createClient, env, randomUUID = () => crypto.ran
         const phone = typeof body.contact_phone === 'string' ? body.contact_phone.trim() : '';
         const contactEmail = typeof body.email === 'string' ? body.email.trim() : '';
         check(displayName.length > 0 && displayName.length <= 60 && phone.length <= 30, '姓名或联系电话格式错误');
-        check(!contactEmail || (contactEmail.length <= 254 && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(contactEmail)), '邮箱格式错误');
+        check(!contactEmail || (contactEmail.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)), '邮箱格式错误');
         check(typeof body.password === 'string' && body.password.length >= 12 && body.password.length <= 128, '密码长度须为12–128位');
         const ip = (request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim();
         const { data: allowed, error: limiterError } = await admin.rpc('td_login_attempt_v32', { p_login: 'register:' + ip });
@@ -67,7 +71,7 @@ export function createHandler({ createClient, env, randomUUID = () => crypto.ran
         check(!existingError, '注册服务暂不可用', 503);
         check(!existing, '用户名已被使用', 409);
         const { data: created, error: creationError } = await admin.auth.admin.createUser({
-          email: `${randomUUID()}@${env('TD_TEST_PROJECT_REF')}.supabase.co`,
+          email: `${randomUUID()}@${projectRef}.supabase.co`,
           password: body.password, email_confirm: true, ban_duration: '876000h',
           user_metadata: { display_name: displayName },
         });
@@ -121,7 +125,7 @@ export function createHandler({ createClient, env, randomUUID = () => crypto.ran
       // Random internal identity on this project's real domain, never a fabricated example domain.
       // Contact email is optional profile data; Auth never sends mail to this internal identity.
       const { data: created, error: creationError } = await admin.auth.admin.createUser({
-        email: `${randomUUID()}@${env('TD_TEST_PROJECT_REF')}.supabase.co`, password: body.password,
+        email: `${randomUUID()}@${projectRef}.supabase.co`, password: body.password,
         email_confirm: true, ban_duration: '876000h', user_metadata: { display_name: displayName },
       });
       check(!creationError && created?.user, '创建账号失败，请检查 Auth 密码策略', 409);

@@ -8,7 +8,7 @@ async function tdStaffRequest(body) {
   try { ({ data: result, error } = await db.functions.invoke('staff-auth', { body, signal: controller.signal })); }
   finally { clearTimeout(timeout); }
   if (error) {
-    let message = '账号服务请求失败，请确认测试后台已部署并检查网络';
+    let message = '账号服务请求失败，请确认后台已部署并检查网络';
     try { const response = await error.context?.json(); if (response?.message) message = response.message; } catch {}
     throw new Error(message);
   }
