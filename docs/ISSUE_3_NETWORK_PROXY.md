@@ -29,7 +29,11 @@ Netlify Edge Function 适配现有 10 MB 上传，避免普通缓冲式 Function
 
 `npm test` 包含原有权限/Auth/前端测试和新增代理测试，SDK 集成使用仓库固定版本的真实 SDK，但测试上游是隔离响应，不代表真实账号、数据库 RLS 或手机网络验收。
 
-执行 `npm run check`、`node scripts/build-static.mjs`、`git diff --check`。只读现场检查不执行登录限流写入、不注册账号、不修改正式数据库。
+已通过全部 52 项 `npm test`、`npm run check`、`node scripts/build-static.mjs`、`git diff --check`。本地 Chromium UI 回归也通过（模拟后台；没有操作真实账号）。修复了旧浏览器测试只拦截 CDN、未拦截当前本地 SDK 的问题。
+
+只读现场检查确认 health 返回 401 且 reachable:true；带公开 key、没有用户 JWT 的 /auth/v1/user 返回 401 且无用户信息。运行环境的 Node 需要使用已配置的 HTTPS 代理和受信 CA；启用标准代理及 CA 后通过，未关闭 TLS 校验。没有执行登录限流写入、注册或修改正式数据库。
+
+草稿 PR #4 的 Netlify Deploy Preview 已报告 SUCCESS，网址 https://deploy-preview-4--tengda-express-station.netlify.app 。实际访问被现有 Netlify 访问保护跳转到 app.netlify.com/edge-access；没有移除保护。当前工具没有 Netlify 已登录会话，预览真实代理接口、受影响网络和隔离项目完整端到端验收尚未通过，需要站点授权用户先在浏览器登录 Netlify 后访问预览。不要将该登录跳转当成代理 JSON 或部署失败。
 
 ## Deploy Preview 验收（仍需完成）
 
