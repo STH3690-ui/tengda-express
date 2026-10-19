@@ -3,13 +3,21 @@
 async function tdStaffRequest(body) {
   if (!db) throw new Error('登录服务尚未连接');
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 30000);
   let result, error;
   try { ({ data: result, error } = await db.functions.invoke('staff-auth', { body, signal: controller.signal })); }
   finally { clearTimeout(timeout); }
   if (error) {
-    let message = '账号服务请求失败，请确认后台已部署并检查网络';
-    try { const response = await error.context?.json(); if (response?.message) message = response.message; } catch {}
+    let message = '账号服务请求失败';
+    const context = error.context;
+    if (context && typeof context.status === 'number') {
+      message += '（HTTP ' + context.status + '）';
+      try { const response = await context.clone().json(); if (response?.message) message = response.message + '（HTTP ' + context.status + '）'; } catch {}
+    } else if (controller.signal.aborted) {
+      message = '账号服务连接超时（30秒），请切换网络重试';
+    } else {
+      message = '无法连接账号服务（网络或浏览器拦截），请切换网络重试';
+    }
     throw new Error(message);
   }
   if (!result?.ok) throw new Error(result?.message || '账号操作失败');
