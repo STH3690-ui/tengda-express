@@ -7,7 +7,7 @@ const PRODUCTION_REF = 'yvsgawbbnyeyvynwghsc';
 const env = (name: string): string | undefined => {
   if (name === 'TD_ENVIRONMENT') return 'tengda-v32-production';
   if (name === 'TD_PROJECT_REF') return PRODUCTION_REF;
-  if (name === 'TD_ALLOWED_ORIGINS') return Deno.env.get(name) || 'http://127.0.0.1:8080';
+  if (name === 'TD_ALLOWED_ORIGINS') return 'https://tengda-express-station.netlify.app';
   return Deno.env.get(name);
 };
 Deno.serve(createHandler({ createClient, env }));
