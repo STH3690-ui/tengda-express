@@ -7,7 +7,7 @@ const inline=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map
 function frontend() {
  const nodes={};
  const node=id=>nodes[id]??={innerHTML:'',textContent:'',value:'',classList:{add(){},remove(){}},addEventListener(){}};
- const context=vm.createContext({document:{getElementById:node,addEventListener(){}},setInterval(){},setTimeout(){},clearTimeout(){},AbortController,window:{},console,confirm:()=>true});
+ const context=vm.createContext({document:{getElementById:node,addEventListener(){}},setInterval(){},setTimeout(){},clearTimeout(){},AbortController,Response,window:{},console,confirm:()=>true});
  vm.runInContext(inline,context);
  return {run:code=>vm.runInContext(code,context),nodes};
 }
@@ -35,8 +35,8 @@ test('frontend never constructs example-domain Auth addresses or calls privilege
 });
 
 function loadAuth(f){f.run('connect=()=>{}');f.run(readFileSync(new URL('../tengda-staff-auth-v32.js',import.meta.url),'utf8'));}
-test('server login errors are presented without misreporting a deployment failure',async()=>{const f=frontend();loadAuth(f);f.run("db={functions:{async invoke(){return {error:{context:{async json(){return {message:'账号已停用'}}}}}}}}");await assert.rejects(f.run("tdStaffRequest({action:'login'})"),/账号已停用/);});
-test('transport failures use a safe actionable error',async()=>{const f=frontend();loadAuth(f);f.run("db={functions:{async invoke(){return {error:{}}}}}");await assert.rejects(f.run("tdStaffRequest({action:'login'})"),/检查网络/);});
+test('server login errors are presented without misreporting a deployment failure',async()=>{const f=frontend();loadAuth(f);f.run("db={functions:{async invoke(){return {error:{context:Response.json({message:'账号已停用'},{status:403})}}}}}");await assert.rejects(f.run("tdStaffRequest({action:'login'})"),/账号已停用/);});
+test('transport failures use a safe actionable error',async()=>{const f=frontend();loadAuth(f);f.run("db={functions:{async invoke(){return {error:{}}}}}");await assert.rejects(f.run("tdStaffRequest({action:'login'})"),/网络/);});
 
 test('authorized employees hide orders through the safe RPC, never delete a table row',async()=>{const f=frontend();f.run("canHideOrders=true;data.td_orders=[{id:'order1',item_name:'Original'}];notify=()=>{};refresh=async()=>{};let called='';db={async rpc(name){called=name;return {}}}");await f.run("deleteOrder('order1')");assert.equal(f.run('called'),'td_staff_hide_order');assert.equal(f.run('data.td_orders.length'),1);});
 test('employees without a grant cannot call the order removal service',async()=>{const f=frontend();f.run("canHideOrders=false;notify=(x)=>x;db={rpc(){throw Error('RPC should not be called')}}");assert.match(await f.run("deleteOrder('order1')"),/未获管理员授权/);});
