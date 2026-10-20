@@ -23,7 +23,7 @@ with sync_playwright() as p:
     page.on('pageerror',lambda e: errors.append(str(e)))
     def route(request):
         url=request.request.url
-        if '@supabase/supabase-js' in url:
+        if '@supabase/supabase-js' in url or '/vendor/supabase-2.49.8.min.js' in url:
             request.fulfill(status=200,content_type='text/javascript',body=STUB)
         elif url.startswith('https://station.test/'):
             path=ROOT/(url.split('https://station.test/',1)[1].split('?',1)[0] or 'index.html')
