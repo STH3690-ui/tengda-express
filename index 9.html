@@ -70,16 +70,6 @@ const name=id=>data.td_customers.find(x=>x.id===id)?.name||'未知客户';const 
 function notify(s,err=false){$('msg').textContent=s;$('msg').classList.remove('hidden');$('msg').style.background=err?'#ffe8e8':'#fff4cf';window.scrollTo({top:0,behavior:'smooth'});}
 const TD_SUPABASE_URL='https://yvsgawbbnyeyvynwghsc.supabase.co';
 const TD_SUPABASE_PUBLISHABLE_KEY='sb_publishable_olGZexHf-mjgPzQ6Bz7X9w_Idr2L6Hu';
-async function tdDiagnose(){
- const output=$('td-diag-output');output.textContent='正在检测同源连接…';const c=new AbortController(),timer=setTimeout(()=>c.abort(),12000);
- try {const r=await fetch('/api/supabase-health',{cache:'no-store',signal:c.signal});const d=await r.json();output.textContent=d.reachable?'连接可达，上游 HTTP '+d.upstreamStatus+'。连接可达不代表账号已获授权。':'同源服务暂时无法连接上游。';}
- catch {output.textContent='同源连接失败或超时，请稍后重试。';}finally{clearTimeout(timer);}
-}
-document.addEventListener('DOMContentLoaded',()=>{
- const form=$('loginForm');if(!form||$('td-diag-output'))return;
- const box=document.createElement('div'),button=document.createElement('button'),output=document.createElement('p');
- button.type='button';button.className='secondary';button.textContent='检测连接';button.addEventListener('click',tdDiagnose);output.id='td-diag-output';output.setAttribute('aria-live','polite');box.append(button,output);form.insertAdjacentElement('afterend',box);
-});
 async function connect(){
  if(!window.supabase){notify('无法加载登录服务，请检查网络后刷新。',true);return;}
  db=window.supabase.createClient(window.location.origin+'/api/supabase',TD_SUPABASE_PUBLISHABLE_KEY,{
