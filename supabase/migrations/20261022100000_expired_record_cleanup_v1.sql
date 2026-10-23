@@ -52,7 +52,7 @@ begin
   ) then
     raise exception '仅管理员可预览过期记录清理';
   end if;
-  if p_cutoff_date is null or p_cutoff_date > current_date then
+  if p_cutoff_date is null or p_cutoff_date > (now() at time zone 'Asia/Yangon')::date then
     raise exception '截止日期不能为空，且不能晚于今天';
   end if;
 
@@ -131,7 +131,7 @@ begin
   ) then
     raise exception '仅管理员可执行过期记录归档';
   end if;
-  if p_cutoff_date is null or p_cutoff_date > current_date then
+  if p_cutoff_date is null or p_cutoff_date > (now() at time zone 'Asia/Yangon')::date then
     raise exception '截止日期不能为空，且不能晚于今天';
   end if;
   if p_confirm_text is distinct from '确认归档' then
