@@ -64,7 +64,7 @@ begin
     and lower(trim(coalesce(o.status,''))) in ('已完成','完成','completed','complete','done')
     and not exists (
       select 1 from public.td_parcels p
-      where p.order_id = o.id and coalesce(p.remaining, 0) > 0
+      where p.order_id = o.id and p.remaining is distinct from 0
     );
 
   select count(*) into v_parcel_count
@@ -86,7 +86,7 @@ begin
     and lower(trim(coalesce(o.status,''))) in ('已完成','完成','completed','complete','done')
     and not exists (
       select 1 from public.td_parcels p
-      where p.order_id = o.id and coalesce(p.remaining, 0) > 0
+      where p.order_id = o.id and p.remaining is distinct from 0
     );
 
   select coalesce(jsonb_agg(jsonb_build_object(
@@ -146,7 +146,7 @@ begin
       and lower(trim(coalesce(o.status,''))) in ('已完成','完成','completed','complete','done')
       and not exists (
         select 1 from public.td_parcels p
-        where p.order_id = o.id and coalesce(p.remaining, 0) > 0
+        where p.order_id = o.id and p.remaining is distinct from 0
       )
     for update
   )
