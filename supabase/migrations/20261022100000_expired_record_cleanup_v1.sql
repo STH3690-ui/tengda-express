@@ -61,7 +61,11 @@ begin
   from public.td_orders o
   where o.archived_at is null
     and o.created_at < (p_cutoff_date + 1)::timestamptz
-    and lower(trim(coalesce(o.status,''))) in ('已完成','完成','completed','complete','done');
+    and lower(trim(coalesce(o.status,''))) in ('已完成','完成','completed','complete','done')
+    and not exists (
+      select 1 from public.td_parcels p
+      where p.order_id = o.id and coalesce(p.remaining, 0) > 0
+    );
 
   select count(*) into v_parcel_count
   from public.td_parcels p
@@ -79,7 +83,11 @@ begin
   from public.td_orders o
   where o.archived_at is null
     and o.created_at < (p_cutoff_date + 1)::timestamptz
-    and lower(trim(coalesce(o.status,''))) in ('已完成','完成','completed','complete','done');
+    and lower(trim(coalesce(o.status,''))) in ('已完成','完成','completed','complete','done')
+    and not exists (
+      select 1 from public.td_parcels p
+      where p.order_id = o.id and coalesce(p.remaining, 0) > 0
+    );
 
   select coalesce(jsonb_agg(jsonb_build_object(
     'id',p.id,'customer_id',p.customer_id,'tracking_no',p.tracking_no,
@@ -136,6 +144,10 @@ begin
     where o.archived_at is null
       and o.created_at < (p_cutoff_date + 1)::timestamptz
       and lower(trim(coalesce(o.status,''))) in ('已完成','完成','completed','complete','done')
+      and not exists (
+        select 1 from public.td_parcels p
+        where p.order_id = o.id and coalesce(p.remaining, 0) > 0
+      )
     for update
   )
   update public.td_orders o
