@@ -29,6 +29,6 @@ async function tdCleanupExecute(cutoff){
 }
 function tdCleanupPage(){
   if(role!=='owner') return '<h2>无权限</h2>';
-  const today=new Date().toISOString().slice(0,10);
+  const now=new Date(); const today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   return '<h2>过期记录清理</h2><p class="muted">仅管理员可操作。手动选择截止日期，先预览再二次确认。此功能仅归档，不物理删除业务记录。</p><div class="panel"><label>截止日期（包含当天）</label><input id="tdCleanupDate" type="date" max="'+today+'" value="'+today+'"><p><button class="primary" onclick="tdCleanupPreview()">预览候选记录</button></p><div id="tdCleanupPreview"><p class="muted">请选择日期并预览。预览不会修改业务数据。</p></div></div>';
 }
