@@ -52,7 +52,7 @@ begin
   ) then
     raise exception '仅管理员可预览过期记录清理';
   end if;
-  if p_cutoff_date is null or p_cutoff_date > current_date then
+  if p_cutoff_date is null or p_cutoff_date > (now() at time zone 'Asia/Yangon')::date then
     raise exception '截止日期不能为空，且不能晚于今天';
   end if;
 
@@ -60,7 +60,7 @@ begin
   select count(*) into v_order_count
   from public.td_orders o
   where o.archived_at is null
-    and o.created_at < (p_cutoff_date + 1)::timestamptz
+    and o.created_at < ((p_cutoff_date + 1)::timestamp at time zone 'Asia/Yangon')
     and lower(trim(coalesce(o.status,''))) in ('已完成','完成','completed','complete','done')
     and not exists (
       select 1 from public.td_parcels p
@@ -70,7 +70,7 @@ begin
   select count(*) into v_parcel_count
   from public.td_parcels p
   where p.archived_at is null
-    and p.arrived_at < (p_cutoff_date + 1)::timestamptz
+    and p.arrived_at < ((p_cutoff_date + 1)::timestamp at time zone 'Asia/Yangon')
     and p.remaining = 0;
 
   select coalesce(jsonb_agg(jsonb_build_object(
@@ -82,7 +82,7 @@ begin
   into v_orders
   from public.td_orders o
   where o.archived_at is null
-    and o.created_at < (p_cutoff_date + 1)::timestamptz
+    and o.created_at < ((p_cutoff_date + 1)::timestamp at time zone 'Asia/Yangon')
     and lower(trim(coalesce(o.status,''))) in ('已完成','完成','completed','complete','done')
     and not exists (
       select 1 from public.td_parcels p
@@ -98,7 +98,7 @@ begin
   into v_parcels
   from public.td_parcels p
   where p.archived_at is null
-    and p.arrived_at < (p_cutoff_date + 1)::timestamptz
+    and p.arrived_at < ((p_cutoff_date + 1)::timestamp at time zone 'Asia/Yangon')
     and p.remaining = 0;
 
   insert into public.td_record_cleanup_audit(actor,cutoff_date,action,orders_archived,parcels_archived,details)
@@ -131,7 +131,7 @@ begin
   ) then
     raise exception '仅管理员可执行过期记录归档';
   end if;
-  if p_cutoff_date is null or p_cutoff_date > current_date then
+  if p_cutoff_date is null or p_cutoff_date > (now() at time zone 'Asia/Yangon')::date then
     raise exception '截止日期不能为空，且不能晚于今天';
   end if;
   if p_confirm_text is distinct from '确认归档' then
@@ -142,7 +142,7 @@ begin
   with candidates as (
     select o.id from public.td_orders o
     where o.archived_at is null
-      and o.created_at < (p_cutoff_date + 1)::timestamptz
+      and o.created_at < ((p_cutoff_date + 1)::timestamp at time zone 'Asia/Yangon')
       and lower(trim(coalesce(o.status,''))) in ('已完成','完成','completed','complete','done')
       and not exists (
         select 1 from public.td_parcels p
@@ -158,7 +158,7 @@ begin
   with candidates as (
     select p.id from public.td_parcels p
     where p.archived_at is null
-      and p.arrived_at < (p_cutoff_date + 1)::timestamptz
+      and p.arrived_at < ((p_cutoff_date + 1)::timestamp at time zone 'Asia/Yangon')
       and p.remaining = 0
     for update
   )
