@@ -181,6 +181,8 @@ $$;
 
 revoke all on function public.td_cleanup_preview_v1(date) from public;
 revoke all on function public.td_cleanup_archive_v1(date,text) from public;
+revoke execute on function public.td_cleanup_preview_v1(date) from anon;
+revoke execute on function public.td_cleanup_archive_v1(date,text) from anon;
 grant execute on function public.td_cleanup_preview_v1(date) to authenticated;
 grant execute on function public.td_cleanup_archive_v1(date,text) to authenticated;
 
