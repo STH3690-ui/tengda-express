@@ -202,7 +202,17 @@ function tdAuditRenderResults(){
  const el=$('tdAuditResults');if(!el)return;
  const rows=tdAuditRows(),employee=id=>{const m=data.td_members.find(x=>x.id===id);return m?.display_name||m?.username||'未知员工';};
  const counts=new Map();rows.forEach(x=>counts.set(x.employee,(counts.get(x.employee)||0)+1));
- el.innerHTML='<p class="muted">共 '+rows.length+' 条记录（包括已隐藏订单及已删除客户；按创建人统计，不代表后续修改人）。</p>'+
+ const byKind=kind=>rows.filter(x=>x.kind===kind);
+ const sumKind=kind=>byKind(kind).reduce((n,x)=>n+Number(x.amount||0),0);
+ const stat=(label,value)=>'<div class="metric"><span class="muted">'+esc(label)+'</span><b>'+esc(String(value))+'</b></div>';
+ const summary='<div class="metrics">'+stat('录入总笔数',rows.length+' 笔')+stat('订单笔数',byKind('订单').length+' 笔')+
+ stat('订单金额合计',sumKind('订单').toLocaleString('en-US')+' MMK')+
+ stat('收付款记录',byKind('收付款').length+' 笔')+
+ stat('收付款金额合计',sumKind('收付款').toLocaleString('en-US')+' MMK')+
+ stat('新增客户',byKind('客户').length+' 人')+stat('包裹入库',byKind('包裹入库').length+' 批')+
+ stat('取件记录',byKind('取件').length+' 笔')+'</div>';
+ el.innerHTML=summary+'<p class="muted">按当前员工、类型和日期筛选汇总；包含已隐藏订单及已删除客户。订单金额与收付款金额分别统计，不相加，也不等于实际利润。</p>'+
+ '<p class="muted">共 '+rows.length+' 条记录（按创建人统计，不代表后续修改人）。</p>'+
  '<div class="scroll"><table><tr><th>录入员工</th><th>类型</th><th>时间</th><th>内容</th><th>金额 MMK</th><th>状态</th></tr>'+
  rows.slice(0,1000).map(x=>'<tr><td>'+esc(employee(x.employee))+'</td><td>'+esc(x.kind)+'</td><td>'+esc(x.at?new Date(x.at).toLocaleString('zh-CN',{timeZone:'Asia/Yangon',hour12:false}):'—')+'</td><td>'+esc(x.detail)+'</td><td>'+esc(x.amount===null?'—':Number(x.amount).toLocaleString('en-US'))+'</td><td>'+esc(x.state)+'</td></tr>').join('')+'</table></div>'+
  (rows.length>1000?'<p class="muted">仅展示前1000条，请缩小筛选范围。</p>':'');
