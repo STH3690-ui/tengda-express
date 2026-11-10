@@ -87,7 +87,38 @@ async function enter(){if(!await tdCheckMember())return;$('auth').classList.add(
 setInterval(()=>{if(user)tdCheckMember().catch(()=>{tdClearSessionView();});},30000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&user)tdCheckMember().catch(()=>tdClearSessionView());});
 async function logout(){await db.auth.signOut();location.reload()}
-async function refresh(){try{if(!await tdCheckMember())return;for(let t of Object.keys(data)){const field=t==='td_parcels'?'arrived_at':t==='td_pickups'?'picked_at':'created_at';const rows=[];for(let offset=0;offset<50000;offset+=1000){const {data:d,error}=await db.from(t).select('*').order(field,{ascending:false}).order('id',{ascending:false}).range(offset,offset+999);if(error)throw new Error(t+': '+error.message);rows.push(...(d||[]));if((d||[]).length<1000)break;if(offset===49000)throw new Error(t+'记录超过50000条，请联系管理员')}data[t]=rows}const ar=await db.from('td_customer_archives').select('customer_id');if(ar.error)throw new Error('V2.9 客户归档: '+ar.error.message);archivedCustomers=new Set((ar.data||[]).map(x=>x.customer_id));const hr=await db.from('td_order_hidden_v41').select('order_id');if(hr.error)throw new Error('历史订单隐藏状态: '+hr.error.message);hiddenOrderIds=new Set((hr.data||[]).map(x=>x.order_id));render()}catch(e){notify('读取失败：'+e.message+'。请确认已运行 setup.sql。',true)}}
+async function refresh(){
+  try {
+    if(!await tdCheckMember())return;
+    // Load into temporary state: never present a partial/empty dashboard as successful data.
+    const next={};
+    for(const t of Object.keys(data)){
+      const field=t==='td_parcels'?'arrived_at':t==='td_pickups'?'picked_at':'created_at';
+      const rows=[];
+      for(let offset=0;offset<50000;offset+=1000){
+        const {data:d,error}=await db.from(t).select('*').order(field,{ascending:false}).order('id',{ascending:false}).range(offset,offset+999);
+        if(error)throw new Error(t+': '+error.message);
+        rows.push(...(d||[]));
+        if((d||[]).length<1000)break;
+        if(offset===49000)throw new Error(t+'记录超过50000条，请联系管理员');
+      }
+      next[t]=rows;
+    }
+    const ar=await db.from('td_customer_archives').select('customer_id');
+    if(ar.error)throw new Error('客户归档: '+ar.error.message);
+    const hr=await db.from('td_order_hidden_v41').select('order_id');
+    if(hr.error)throw new Error('订单隐藏状态: '+hr.error.message);
+    Object.assign(data,next);
+    archivedCustomers=new Set((ar.data||[]).map(x=>x.customer_id));
+    hiddenOrderIds=new Set((hr.data||[]).map(x=>x.order_id));
+    render();
+  }catch(e){
+    const message='数据读取失败：'+e.message;
+    notify(message,true);
+    // Keep the error visible in the page, rather than showing misleading zero totals.
+    $('page').innerHTML='<section class="panel" role="alert"><h2>业务数据尚未加载</h2><p>'+esc(message)+'</p><button class="primary" onclick="refresh()">重新读取数据</button></section>';
+  }
+}
 const tabs=[['dashboard','总览'],['customers','客户'],['orders','代买代付'],['parcels','包裹入库'],['query','客户包裹查询'],['pickups','取件'],['payments','收付款'],['records','记录查询'],['deletions','删除历史'],['cleanup','过期清理'],['staff','账号管理'],['stations','站点地址']];
 function tdDecorateFormFields(){const root=$('page');if(!root)return;const rules=[[/客户|姓名|电话|账号|员工|用户/,'👤'],[/订单|商品|代买|代付|数量|单价|人民币|汇率/,'🛍️'],[/运单|包裹|入库|到站|件数|重量|公斤|类别|货物/,'📦'],[/运费|收费|费用|金额|付款|收款|欠款|余额|支付|方式|利润|成本/,'💰'],[/照片|图片|拍照|相册/,'📷'],[/日期|时间/,'📅'],[/取件|签收|领取/,'🚚'],[/搜索|查询|筛选/,'🔎'],[/备注|说明|内容|地址/,'📝'],[/密码|权限|状态|审批/,'🔐']];root.querySelectorAll('form label,.photo-box label,#tdDashTools label').forEach(label=>{if(label.querySelector('.td-field-icon'))return;const t=(label.textContent||'').trim();if(!t)return;const hit=rules.find(([re])=>re.test(t));const icon=hit?hit[1]:'✦';const span=document.createElement('span');span.className='td-field-icon';span.setAttribute('aria-hidden','true');span.textContent=icon;label.prepend(span)});root.querySelectorAll('form').forEach(form=>form.classList.add('td-colored-form'))}
 function render(){document.body.setAttribute('data-td-page',page);let list=tabs.filter(x=>!['staff','deletions','cleanup'].includes(x[0])||role==='owner');$('nav').innerHTML=list.map(x=>`<button class="${page===x[0]?'active':''}" onclick="page='${x[0]}';render()"><span class="td-nav-icon" aria-hidden="true">${({dashboard:'📊',customers:'👥',orders:'🛍️',parcels:'📦',query:'🔎',pickups:'🚚',payments:'💳',records:'📋',deletions:'🗂️',cleanup:'🧹',staff:'🛡️',stations:'📍'})[x[0]]||'✦'}</span>${x[1]}</button>`).join('');$('page').innerHTML=({dashboard:dashboard,customers:customers,orders:orders,parcels:parcels,query:parcelQuery,pickups:pickups,payments:payments,records:records,deletions:deletions,cleanup:tdCleanupPage,staff:staff,stations:tdStationPage})[page]();tdDecorateFormFields();if(page==='pickups'){loadPickupBatches();tdLoadDebts();}if(page==='dashboard')tdLoadFinance();if(page==='query'){renderQueryResults();}if(page==='records')filterRecords();if(page==='deletions')loadDeletionLogs();if(page==='stations')tdLoadStations();}
