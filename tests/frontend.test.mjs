@@ -40,3 +40,21 @@ test('transport failures use a safe actionable error',async()=>{const f=frontend
 
 test('authorized employees hide orders through the safe RPC, never delete a table row',async()=>{const f=frontend();f.run("canHideOrders=true;data.td_orders=[{id:'order1',item_name:'Original'}];notify=()=>{};refresh=async()=>{};let called='';db={async rpc(name){called=name;return {}}}");await f.run("deleteOrder('order1')");assert.equal(f.run('called'),'td_staff_hide_order');assert.equal(f.run('data.td_orders.length'),1);});
 test('employees without a grant cannot call the order removal service',async()=>{const f=frontend();f.run("canHideOrders=false;notify=(x)=>x;db={rpc(){throw Error('RPC should not be called')}}");assert.match(await f.run("deleteOrder('order1')"),/未获管理员授权/);});
+
+test('employee audit is owner-only and visible in owner navigation',()=>{
+ const f=frontend();f.run("role='staff'");assert.match(f.run('tdStaffAuditPage()'),/无权限/);assert.ok(!f.run("tabs.filter(x=>!['staff','staffAudit','deletions','cleanup'].includes(x[0])||role==='owner').some(x=>x[0]==='staffAudit')"));
+ f.run("role='owner'");assert.ok(f.run("tabs.some(x=>x[0]==='staffAudit')"));assert.match(f.run('tdStaffAuditPage()'),/员工录入明细/);
+});
+test('employee audit attributes entries to creator, includes hidden and deleted records',()=>{
+ const f=frontend();f.run("role='owner';data.td_members=[{id:'a',display_name:'小杨'},{id:'b',display_name:'杨'}];data.td_orders=[{id:'o1',created_by:'a',item_name:'电视',total_price:69000,created_at:'2026-10-19T13:46:30Z'},{id:'o2',created_by:'b',item_name:'JBL',total_price:100,created_at:'2026-10-20T00:00:00Z'}];data.td_customers=[{id:'c1',created_by:'a',name:'已删除客户',deleted_at:'2026-10-21',created_at:'2026-10-19T00:00:00Z'}];hiddenOrderIds=new Set(['o1'])");
+ assert.equal(f.run('tdAuditRows().length'),3);
+ assert.equal(f.run("tdAuditRows().find(x=>x.id==='o1').state"),'已隐藏');
+ assert.equal(f.run("tdAuditRows().find(x=>x.id==='c1').state"),'已删除');
+ f.run("tdAuditEmployee='a'");assert.equal(f.run('tdAuditRows().length'),2);
+ f.run("tdAuditKind='订单'");assert.equal(f.run('tdAuditRows().length'),1);
+ f.run("tdAuditFrom='2026-10-20'");assert.equal(f.run('tdAuditRows().length'),0);
+});
+test('employee audit escapes untrusted details before rendering',()=>{
+ const f=frontend();f.run("role='owner';data.td_members=[{id:'a',display_name:'<img onerror=alert(1)>'}];data.td_orders=[{id:'o',created_by:'a',item_name:'<script>alert(1)</script>',created_at:'2026-10-20T00:00:00Z'}]");
+ f.run('tdAuditRenderResults()');assert.ok(!f.nodes.tdAuditResults.innerHTML.includes('<script>'));assert.ok(!f.nodes.tdAuditResults.innerHTML.includes('<img onerror'));
+});
