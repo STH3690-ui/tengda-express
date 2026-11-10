@@ -58,3 +58,11 @@ test('employee audit escapes untrusted details before rendering',()=>{
  const f=frontend();f.run("role='owner';data.td_members=[{id:'a',display_name:'<img onerror=alert(1)>'}];data.td_orders=[{id:'o',created_by:'a',item_name:'<script>alert(1)</script>',created_at:'2026-10-20T00:00:00Z'}]");
  f.run('tdAuditRenderResults()');assert.ok(!f.nodes.tdAuditResults.innerHTML.includes('<script>'));assert.ok(!f.nodes.tdAuditResults.innerHTML.includes('<img onerror'));
 });
+
+test('employee audit totals follow current filters and separate order and payment amounts',()=>{
+ const f=frontend();f.run("role='owner';data.td_members=[{id:'a',display_name:'小杨'},{id:'b',display_name:'杨'}];data.td_orders=[{id:'o1',created_by:'a',item_name:'电视',total_price:69000,created_at:'2026-10-20T00:00:00Z'},{id:'o2',created_by:'b',item_name:'JBL',total_price:100,created_at:'2026-10-20T00:00:00Z'}];data.td_payments=[{id:'p1',created_by:'a',amount:500,created_at:'2026-10-20T00:00:00Z'}];data.td_customers=[{id:'c1',created_by:'a',name:'客户',created_at:'2026-10-20T00:00:00Z'}]");
+ f.run("tdAuditEmployee='a'");f.run('tdAuditRenderResults()');let html=f.nodes.tdAuditResults.innerHTML;
+ assert.ok(html.includes('录入总笔数'));assert.ok(html.includes('3 笔'));assert.ok(html.includes('69,000 MMK'));assert.ok(html.includes('500 MMK'));assert.ok(!html.includes('69,100 MMK'));
+ f.run("tdAuditKind='订单'");f.run('tdAuditRenderResults()');html=f.nodes.tdAuditResults.innerHTML;
+ assert.ok(html.includes('1 笔'));assert.ok(html.includes('69,000 MMK'));assert.ok(html.includes('0 MMK'));
+});
