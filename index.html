@@ -73,6 +73,41 @@ body[data-td-page] #page .td-colored-form .photo-box{border-left:4px solid var(-
 .td-order-results strong{text-align:right;white-space:nowrap;font-size:15px}
 .td-order-results button{margin-top:10px;border:1px solid #e5c45e;background:#fff2c1;padding:9px 12px;border-radius:8px}
 @media(max-width:380px){.td-order-grid{gap:2px 8px!important}.td-order-grid label{font-size:12px}.td-order-results p{font-size:12px}}
+
+/* Teng Da brand refresh: presentation only; business logic unchanged. */
+:root{--td-ink:#101114;--td-gold:#f3be32;--td-gold-soft:#fff1c5;--td-line:#e9dfc7;--td-radius:16px;accent-color:var(--td-gold)}
+body{background:#f7f5ef;color:#191919}
+.wrap{max-width:1120px}
+.panel{border:1px solid #eee4cd;border-radius:18px;box-shadow:0 8px 28px rgba(25,20,5,.045)}
+.nav{gap:9px;padding:12px;box-shadow:0 5px 18px #00000009;scrollbar-width:thin;scrollbar-color:#d4ae46 transparent}
+.nav button{min-height:44px;border:1px solid #eee6d5;background:#faf7ef;border-radius:13px;color:#3c3527;font-weight:650;transition:background .16s,transform .16s,border-color .16s}
+.nav button:hover{background:#fff0bf;border-color:#e8c45e}
+.nav button.active{background:#141518;color:#ffdc5c;border-color:#d8a735;box-shadow:0 3px 0 #e3b238}
+button{font-family:inherit;min-height:42px;transition:background .16s,box-shadow .16s,transform .16s;touch-action:manipulation}
+button:active:not(:disabled){transform:translateY(1px)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #f0c24d;outline-offset:2px}
+button:disabled{opacity:.48;cursor:not-allowed}
+button.primary{background:#171719;color:#ffdb51;border:1px solid #171719;border-radius:12px;box-shadow:0 3px 0 #d6aa31}
+button.primary:hover:not(:disabled){background:#303033}
+button.secondary{background:#fffdf7;color:#302817;border:1px solid #dfc991;border-radius:12px;font-weight:650}
+button.secondary:hover:not(:disabled){background:#fff1c8;border-color:#cda63f}
+button.danger,.danger button{border-color:#d7a3a3;color:#a22b2b}
+input,select,textarea{border-color:#ddd2b7;border-radius:12px;background:#fffefa;min-height:44px}
+input:focus,select:focus,textarea:focus{border-color:#d9ad36;box-shadow:0 0 0 3px #f3d77738;outline:none}
+label{color:#53472f;font-weight:600}
+table{border-radius:12px;overflow:hidden}
+th{background:#faf3df;color:#584825;font-weight:750}
+td,th{border-bottom-color:#eee7d8}
+tbody tr:hover{background:#fffbf0}
+.metric{background:#fffbef;border:1px solid #efdfb8;border-radius:14px}
+.msg{border:1px solid #ead49c;border-radius:13px}
+.td-dashboard .td-stat{border-radius:17px;box-shadow:0 4px 16px #392e1008}
+.td-dashboard .td-stat.gold{background:linear-gradient(135deg,#fff0ba,#f9d879)}
+.td-dashboard .td-stat.feature{background:linear-gradient(135deg,#101114,#2b2924);border-color:#8e6b27}
+.td-hero{border-bottom-color:#f1c44b}
+@media(max-width:699px){.panel{margin:10px 9px;padding:14px;border-radius:16px}.nav{padding:10px 9px}.nav button{min-height:45px;padding:10px 13px}.td-dashboard .td-stat{min-height:104px}button.primary,button.secondary{min-height:44px}input,select,textarea{font-size:16px}}
+@media(prefers-reduced-motion:reduce){button,.nav button{transition:none}}
+
 </style><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="腾达快递"><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script></head><body><header class="td-hero"><div class="wrap td-hero-inner"><div class="td-brand"><div class="td-burmese" lang="my">ထိန်တာ</div><h1>腾达快递站</h1><div class="td-english">TENG DA EXPRESS STATION</div><div id="who" class="muted">云端业务管理 · 手机 / 电脑</div><div class="td-benefits"><span>▣ 快速</span><span>◆ 安全</span><span>▤ 可靠</span><span>◎ 全球</span></div></div></div></header><div class="wrap">
 
 <section id="auth" class="panel hidden"><h2>腾达快递站 · 用户登录</h2><form id="loginForm"><label>用户名</label><input name="username" required maxlength="254" autocapitalize="none" autocomplete="username"><label>密码</label><input name="password" type="password" required autocomplete="current-password"><p><button class="primary">登录</button></p></form><p class="muted">账号注册后需等待管理员审核。已有邮箱账号可使用原邮箱登录。<button type="button" class="secondary" onclick="tdToggleRegistration()">注册账号</button></p></section>
