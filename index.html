@@ -96,7 +96,7 @@ async function connect(){
 }
 function tdClearSessionView(){canHideOrders=false;hiddenOrderIds=new Set();user=null;role='';page='dashboard';editingCustomerId=null;pickupSelected={};pickupCustomer='';pickupBatches=[];signature='';archivedCustomers=new Set();deletionLogs=[];for(const t of Object.keys(data))data[t]=[];$('app').classList.add('hidden');$('page').innerHTML='';$('nav').innerHTML='';$('auth').classList.remove('hidden');$('who').textContent='云端业务管理 · 手机 / 电脑';}
 let canHideOrders=false;
-async function tdCheckMember(){if(!user)return false;const {data:m,error}=await db.from('td_members').select('role,active,display_name,can_hide_orders').eq('id',user.id).maybeSingle();if(error||!m?.active){tdClearSessionView();await db.auth.signOut();notify('账号尚未通过审核、已停用或权限检查失败，请联系管理员。',true);return false;}role=m.role;canHideOrders=role==='owner'||m.can_hide_orders===true;$('who').textContent=`${m.display_name||user.email} · 云端在线`;return true;}
+async function tdCheckMember(){if(!user)return false;const {data:m,error}=await db.from('td_members').select('role,active,display_name,can_hide_orders,deleted_at').eq('id',user.id).maybeSingle();if(error||!m?.active||m.deleted_at){tdClearSessionView();await db.auth.signOut();notify('账号尚未通过审核、已停用或权限检查失败，请联系管理员。',true);return false;}role=m.role;canHideOrders=role==='owner'||m.can_hide_orders===true;$('who').textContent=`${m.display_name||user.email} · 云端在线`;return true;}
 async function enter(){if(!await tdCheckMember())return;$('auth').classList.add('hidden');$('app').classList.remove('hidden');await refresh();}
 // Recheck active membership even for an already open tab. Database checks remain authoritative.
 setInterval(()=>{if(user)tdCheckMember().catch(()=>{tdClearSessionView();});},30000);
@@ -247,7 +247,45 @@ function tdStaffAuditPage(){
  '<div id="tdAuditResults"></div>';
 }
 
-function staff(){if(role!=='owner')return '<h2>无权限</h2>';return `<h2>账号管理</h2><form onsubmit="tdCreateStaff(event)"><div class="grid"><div><label>用户名 *</label><input name="username" required pattern="[A-Za-z0-9_]{3,30}" minlength="3" maxlength="30" autocapitalize="none" autocomplete="off"></div><div><label>姓名 *</label><input name="display_name" required maxlength="60"></div><div><label>邮箱（可选）</label><input name="email" type="email" maxlength="254" autocomplete="off"></div><div><label>联系电话（可选）</label><input name="contact_phone" type="tel" maxlength="30"></div><div><label>初始密码（至少12位）*</label><input name="password" type="password" minlength="12" maxlength="128" required autocomplete="new-password"></div></div><p><button class="primary">创建账号</button></p></form><p class="muted">新账号默认待审核；批准后可使用。邮箱可选，不用于发送确认邮件。管理员账号不能在这里修改。</p><div class="scroll"><table><tr><th>姓名 / 用户名</th><th>身份</th><th>状态</th><th>订单移除授权</th><th>操作</th></tr>${data.td_members.map(x=>`<tr><td>${esc(x.display_name||x.id)}<br>${esc(x.username||'原有邮箱账号')}</td><td>${x.role==='owner'?'管理员':''}</td><td>${x.active?'已启用':'待审核 / 已停用'}</td><td>${x.role==='owner'?'管理员默认可操作':`<button class="secondary" onclick="tdSetOrderHidePermission('${x.id}',${!x.can_hide_orders})">${x.can_hide_orders?'✅ 已授权 · 点击撤销':'🔒 未授权 · 点击授权'}</button>`}</td><td>${x.role==='owner'?'—':`<button class="secondary" onclick="tdSetStaffActive('${x.id}',${!x.active})">${x.active?'停用':'批准'}</button>`}</td></tr>`).join('')}</table></div><button class="secondary" onclick="refresh()">刷新列表</button>`}
+
+const TD_PERMISSION_GROUPS={"客户管理":[["customer_create","新增客户"],["customer_edit","修改客户"],["customer_delete","删除客户"],["customer_restore","恢复客户"]],"代买代付":[["order_create","录入订单"],["order_edit","修改订单"],["order_delete","删除商品"],["order_restore","恢复商品"]],"包裹管理":[["parcel_create","包裹入库"],["parcel_edit","修改包裹"],["parcel_delete","删除包裹"]],"取件管理":[["pickup_create","办理取件"],["pickup_edit","修改取件"],["pickup_reverse","撤销取件"]],"财务管理":[["finance_view","查看财务"],["finance_create","登记收付款"],["finance_edit","修改收付款"],["finance_export","导出报表"]],"记录管理":[["audit_view","查看操作记录"],["trash_view","查看回收站"],["record_restore","恢复记录"]]};
+function tdPermissionsPanel(id){
+ const m=data.td_members.find(x=>x.id===id);
+ if(!m||m.role==='owner')return notify('仅可设置普通员工权限',true);
+ const current=m.permissions||{};
+ const keys=Object.values(TD_PERMISSION_GROUPS).flat().map(x=>x[0]);
+ const html=Object.entries(TD_PERMISSION_GROUPS).map(([title,items])=>'<fieldset style="border:1px solid #e4d7a7;border-radius:10px;margin:12px 0;padding:12px"><legend><b>'+title+'</b></legend><label><input type="checkbox" onchange="tdPermissionToggleGroup(this)" data-group="'+title+'"> 本类全选</label><div class="grid">'+items.map(([key,label])=>'<label style="min-height:0"><input type="checkbox" data-permission="'+key+'" '+(current[key]===true?'checked':'')+'> '+label+'</label>').join('')+'</div></fieldset>').join('');
+ const box=document.getElementById('tdPermissionEditor');
+ box.innerHTML='<div class="panel"><h3>权限设置：'+esc(m.display_name||m.username||id)+'</h3><p class="muted">全部授权只包含日常业务权限，不包含账号和权限管理。权限由服务器验证。</p><p><button class="secondary" type="button" onclick="tdPermissionSelectAll(true)">全部授权</button> <button class="secondary" type="button" onclick="tdPermissionSelectAll(false)">全部取消</button></p>'+html+'<p><button class="primary" type="button" onclick="tdSavePermissions(\''+id+'\')">保存权限</button> <button class="secondary" type="button" onclick="document.getElementById(\'tdPermissionEditor\').innerHTML=\'\'">关闭</button></p></div>';
+ box.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function tdPermissionSelectAll(v){document.querySelectorAll('#tdPermissionEditor [data-permission],#tdPermissionEditor [data-group]').forEach(x=>x.checked=v)}
+function tdPermissionToggleGroup(el){const items=TD_PERMISSION_GROUPS[el.dataset.group]||[];items.forEach(([key])=>{const input=document.querySelector('#tdPermissionEditor [data-permission="'+key+'"]');if(input)input.checked=el.checked})}
+async function tdSavePermissions(id){
+ if(role!=='owner')return notify('仅管理员可授权',true);
+ const permissions={};document.querySelectorAll('#tdPermissionEditor [data-permission]').forEach(x=>permissions[x.dataset.permission]=x.checked);
+ const {error}=await db.rpc('td_owner_set_permissions_v50',{p_member:id,p_permissions:permissions});
+ if(error)return notify('保存权限失败：'+error.message,true);
+ notify('员工权限已保存');await refresh();
+}
+async function tdSoftDeleteStaff(id){
+ if(role!=='owner')return notify('仅管理员可删除员工',true);
+ const m=data.td_members.find(x=>x.id===id);if(!m||m.role==='owner')return notify('不可删除管理员',true);
+ const reason=prompt('删除员工 '+(m.display_name||m.username||'')+' 的原因（至少3字）：');if(reason===null)return;
+ if(reason.trim().length<3)return notify('请填写至少3字的删除原因',true);
+ if(!confirm('确定删除此员工并停用账号？历史业务数据保留。'))return;
+ const {error}=await db.rpc('td_owner_soft_delete_staff_v50',{p_member:id,p_reason:reason.trim()});
+ if(error)return notify('删除员工失败：'+error.message,true);
+ notify('员工已删除并停用');await refresh();
+}
+async function tdRestoreStaff(id){
+ if(role!=='owner'||!confirm('恢复员工资料？恢复后账号仍停用，需重新批准。'))return;
+ const {error}=await db.rpc('td_owner_restore_staff_v50',{p_member:id});
+ if(error)return notify('恢复失败：'+error.message,true);
+ notify('员工已恢复为停用状态');await refresh();
+}
+
+function staff(){if(role!=='owner')return '<h2>无权限</h2>';return `<h2>账号管理</h2><form onsubmit="tdCreateStaff(event)"><div class="grid"><div><label>用户名 *</label><input name="username" required pattern="[A-Za-z0-9_]{3,30}" minlength="3" maxlength="30" autocapitalize="none" autocomplete="off"></div><div><label>姓名 *</label><input name="display_name" required maxlength="60"></div><div><label>邮箱（可选）</label><input name="email" type="email" maxlength="254" autocomplete="off"></div><div><label>联系电话（可选）</label><input name="contact_phone" type="tel" maxlength="30"></div><div><label>初始密码（至少12位）*</label><input name="password" type="password" minlength="12" maxlength="128" required autocomplete="new-password"></div></div><p><button class="primary">创建账号</button></p></form><p class="muted">新账号默认待审核；批准后可使用。邮箱可选，不用于发送确认邮件。管理员账号不能在这里修改。</p><div class="scroll"><table><tr><th>姓名 / 用户名</th><th>身份</th><th>状态</th><th>权限设置</th><th>操作</th></tr>${data.td_members.map(x=>`<tr><td>${esc(x.display_name||x.id)}<br>${esc(x.username||'原有邮箱账号')}</td><td>${x.role==='owner'?'管理员':''}</td><td>${x.active?'已启用':'待审核 / 已停用'}</td><td>${x.role==='owner'?'管理员全部权限':`<button class="secondary" onclick="tdPermissionsPanel('${x.id}')">分类授权</button>`}</td><td>${x.role==='owner'?'—':`<button class="secondary" onclick="tdSetStaffActive('${x.id}',${!x.active})">${x.active?'停用':'批准'}</button> ${x.deleted_at?`<button class="secondary" onclick="tdRestoreStaff('${x.id}')">恢复员工</button>`:`<button class="secondary danger" onclick="tdSoftDeleteStaff('${x.id}')">删除员工</button>`}`}</td></tr>`).join('')}</table></div><div id="tdPermissionEditor"></div><button class="secondary" onclick="refresh()">刷新列表</button>`}
 
 async function submitRow(e,t){e.preventDefault();let files=Array.from(e.target.querySelector(t==='td_parcels'?'[name=parcel_photos]':'[name=order_photos]')?.files||[]);if(files.length>10)return notify('每个包裹最多选择10张照片',true);let f=Object.fromEntries(new FormData(e.target));delete f.parcel_photos;delete f.order_photos;if(t==='td_orders'){const cny=Number(f.td_cny||0),br=Number(f.td_buy_rate||0),sr=Number(f.td_sell_rate||0),kind=f.service_kind; if([cny,br,sr].some(x=>!Number.isFinite(x)||x<0))return notify('汇率或人民币金额不正确',true); const fx=(cny*(sr-br)); const snapshot='[FXV32:CNY='+cny+';BUY='+br+';SELL='+sr+';DIFF='+fx.toFixed(2)+']';f.notes='['+kind+'] '+snapshot+' '+(f.notes||'');delete f.service_kind;delete f.td_cny;delete f.td_unit_cny;delete f.td_buy_rate;delete f.td_sell_rate;delete f.td_fx_profit; if(cny>0&&br>0){if(e.target.elements.unit_price?.dataset.manual!=='1')f.unit_price=(cny*br).toFixed(2);if(e.target.elements.total_price?.dataset.manual!=='1')f.total_price=(cny*br).toFixed(2);}}for(let k in f)if(f[k]==='')delete f[k];if(t==='td_parcels')f.remaining=Number(f.pieces);if(t==='td_orders'&&(f.total_price===undefined||f.total_price===''))f.total_price=0;f.created_by=user.id;let {data:created,error}=await db.from(t).insert(f).select('id').single();if(error)return notify('保存失败：'+error.message,true);if(files.length){notify('记录已保存，正在上传照片，请勿关闭页面');let r=await uploadPhotos(t==='td_orders'?'orders/'+created.id:created.id,files);notify(r)}else notify('已保存到云端');await refresh()}
 async function submitPickup(e){e.preventDefault();let f=Object.fromEntries(new FormData(e.target));let {error}=await db.rpc('td_record_pickup',{p_parcel:f.parcel_id,p_pieces:Number(f.pieces),p_name:f.receiver_name,p_phone:f.receiver_phone||'',p_signature:signature,p_notes:f.notes||''});if(error)return notify('出库失败：'+error.message,true);signature='';notify('出库成功，剩余件数已同步');await refresh()}
