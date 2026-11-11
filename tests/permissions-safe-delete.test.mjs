@@ -35,3 +35,8 @@ test('new RPC endpoints are explicitly allowed by network proxy',()=>{
  const proxy=readFileSync('netlify/lib/supabase-proxy.mjs','utf8');
  for(const rpc of ['td_owner_set_permissions_v50','td_owner_soft_delete_staff_v50','td_owner_restore_staff_v50'])assert.ok(proxy.includes("'"+rpc+"'"),rpc);
 });
+
+test('legacy owner hide RPC delegates to reasoned RPC, not blocked legacy RPC',()=>{
+ assert.match(sql,/create or replace function public\.td_owner_hide_order_v41\(p_order_id uuid\)/);
+ assert.match(sql,/perform public\.td_staff_hide_order\(p_order_id,'管理员从历史订单移除'\)/);
+});
