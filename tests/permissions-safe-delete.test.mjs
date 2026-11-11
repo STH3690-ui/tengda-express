@@ -103,10 +103,18 @@ test('legacy broad UPDATE policies are constrained by restrictive granular guard
  }
 });
 
-test('pickup finance isolation is explicitly tracked before release',()=>{
- // The existing receipt SELECT policy allows every active employee to read
- // all receipt rows. This is a known unresolved release blocker.
- assert.match(sql,/td_has_permission_v50\('finance_view'\)/);
+test('pickup receipt reads require pickup or finance authorization',()=>{
+ assert.match(sql,/create policy td_pickup_receipt_select_permission_v50 on public\.td_pickup_receipts_v32/);
+ assert.match(sql,/as restrictive for select to authenticated/);
+ for(const permission of ['finance_view','pickup_create','pickup_edit']){
+  assert.ok(sql.includes("public.td_has_permission_v50('"+permission+"')"),permission);
+ }
+});
+
+test('privileged trigger guards cannot be invoked as public RPCs',()=>{
+ for(const fn of ['td_guard_payment_permission_v50','td_guard_pickup_permission_v50','td_guard_pickup_receipt_permission_v50']){
+  assert.ok(sql.includes('revoke all on function public.'+fn+'() from public, anon, authenticated;'),fn);
+ }
 });
 
 test('report preview and CSV both require finance_export in the UI',()=>{
