@@ -108,6 +108,35 @@ tbody tr:hover{background:#fffbf0}
 @media(max-width:699px){.panel{margin:10px 9px;padding:14px;border-radius:16px}.nav{padding:10px 9px}.nav button{min-height:45px;padding:10px 13px}.td-dashboard .td-stat{min-height:104px}button.primary,button.secondary{min-height:44px}input,select,textarea{font-size:16px}}
 @media(prefers-reduced-motion:reduce){button,.nav button{transition:none}}
 
+
+/* Teng Da V2 visual redesign — CSS only, no behavior changes */
+:root{--td-gold:#f7c948;--td-ink:#101113;--td-paper:#fffdfa}
+body{background:#eeeae0!important;color:#1c1b17}
+header.td-hero{background:#090a0c;border-bottom:4px solid #f4c346}
+.nav{background:#111214!important;border-bottom:3px solid #e5b33d!important;box-shadow:0 7px 22px #0002!important}
+.nav button{background:#262628!important;color:#f4e6c4!important;border:1px solid #61502b!important;box-shadow:none!important}
+.nav button.active{background:linear-gradient(135deg,#ffdf73,#e7af2e)!important;color:#171511!important;border-color:#e6b43d!important;font-weight:800!important}
+.nav button:hover{background:#3c3423!important;color:#ffe28b!important}
+#page>.panel,#page .panel{border:1px solid #e2d4ac;border-radius:18px;box-shadow:0 8px 24px #1913000b}
+#page h2{color:#1a1b1d;font-weight:800;letter-spacing:.2px}
+body[data-td-page] #page .td-colored-form{background:#fffefa!important;border:1px solid #d5bb73!important;border-radius:20px!important;box-shadow:0 10px 28px #3a2b1014!important;padding:18px!important}
+body[data-td-page] #page .td-colored-form .td-order-section,
+#page .td-order-grid .td-order-section{background:linear-gradient(100deg,#161719 0%,#343025 100%)!important;color:#ffe08a!important;border:1px solid #a98430!important;border-left:5px solid #f5c13e!important;border-radius:12px!important;padding:13px 15px!important;box-shadow:0 4px 12px #00000012}
+#page .td-order-grid .td-order-section small{color:#e9d8aa!important}
+body[data-td-page] #page .td-colored-form label,#page .td-order-grid label{color:#24211a!important;font-weight:750!important}
+body[data-td-page] #page .td-colored-form input,body[data-td-page] #page .td-colored-form select,body[data-td-page] #page .td-colored-form textarea{background:#fff!important;border:1.5px solid #d8c79e!important;border-radius:13px!important;min-height:49px!important;box-shadow:0 2px 5px #00000006}
+body[data-td-page] #page .td-colored-form input:focus,body[data-td-page] #page .td-colored-form select:focus{border-color:#c59b2e!important;box-shadow:0 0 0 3px #f5cf6444!important}
+body[data-td-page] #page .td-colored-form button.primary,#page button.primary{background:linear-gradient(135deg,#18191c,#302c23)!important;color:#ffda63!important;border:1px solid #d4a838!important;border-radius:13px!important;box-shadow:0 4px 0 #d7ad40!important;font-weight:800!important}
+#page button.secondary{background:#fff8e6!important;color:#292317!important;border:1px solid #cdb46f!important;border-radius:12px!important}
+#page .td-order-results{background:#171819!important;color:#fff5d9!important;border:1px solid #cda43d!important;border-radius:16px!important}
+#page .td-order-results p{border-bottom-color:#51452e!important;color:#f3e8ce!important}
+#page .td-order-results strong{color:#ffda68!important}
+#page .td-order-results button{background:#f8d56c!important;color:#181818!important;border-color:#d1a43c!important;font-weight:750}
+#page .metric{background:linear-gradient(145deg,#fffdf6,#f7e9be)!important;border:1px solid #dfc67d!important}
+#page th{background:#1c1d1f!important;color:#ffe19a!important}
+#page tbody tr:nth-child(even){background:#fffaf0}
+#page .msg{border-left:4px solid #d5aa3e}
+@media(max-width:699px){.nav{padding:11px 9px!important;gap:8px!important}.nav button{min-height:45px!important}body[data-td-page] #page .td-colored-form{padding:13px 11px!important}#page .td-order-grid .td-order-section{margin:17px 0 7px!important}#page .panel{margin:10px 8px}#page .td-order-grid input,#page .td-order-grid select{font-size:16px!important}}
 </style><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="腾达快递"><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script></head><body><header class="td-hero"><div class="wrap td-hero-inner"><div class="td-brand"><div class="td-burmese" lang="my">ထိန်တာ</div><h1>腾达快递站</h1><div class="td-english">TENG DA EXPRESS STATION</div><div id="who" class="muted">云端业务管理 · 手机 / 电脑</div><div class="td-benefits"><span>▣ 快速</span><span>◆ 安全</span><span>▤ 可靠</span><span>◎ 全球</span></div></div></div></header><div class="wrap">
 
 <section id="auth" class="panel hidden"><h2>腾达快递站 · 用户登录</h2><form id="loginForm"><label>用户名</label><input name="username" required maxlength="254" autocapitalize="none" autocomplete="username"><label>密码</label><input name="password" type="password" required autocomplete="current-password"><p><button class="primary">登录</button></p></form><p class="muted">账号注册后需等待管理员审核。已有邮箱账号可使用原邮箱登录。<button type="button" class="secondary" onclick="tdToggleRegistration()">注册账号</button></p></section>
