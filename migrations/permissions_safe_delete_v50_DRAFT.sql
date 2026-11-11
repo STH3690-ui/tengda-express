@@ -223,3 +223,11 @@ create policy td_pickup_batch_update_permission_v50 on public.td_pickup_batches
 as restrictive for update to authenticated
 using (public.td_has_permission_v50('pickup_edit'))
 with check (public.td_has_permission_v50('pickup_edit'));
+
+
+-- Restrict direct payment ledger reads; existing active-staff SELECT policy
+-- remains but cannot override this restrictive authorization check.
+drop policy if exists td_payment_select_permission_v50 on public.td_payments;
+create policy td_payment_select_permission_v50 on public.td_payments
+as restrictive for select to authenticated
+using (public.td_has_permission_v50('finance_view'));
