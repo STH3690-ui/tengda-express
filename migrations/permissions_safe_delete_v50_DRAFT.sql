@@ -113,3 +113,32 @@ begin
 end $$;
 revoke all on function public.td_set_staff_active_v32(uuid,boolean) from public,anon;
 grant execute on function public.td_set_staff_active_v32(uuid,boolean) to authenticated;
+
+-- Fine-grained RLS on existing direct-write endpoints.
+-- Compatibility: existing active staff retain their current create/edit capabilities
+-- until an owner explicitly changes the permission switches.
+update public.td_members
+set permissions=coalesce(permissions,'{}'::jsonb) ||
+ jsonb_build_object('customer_create',true,'customer_edit',true,'order_create',true,'parcel_create',true,'finance_create',true)
+where role='staff' and active=true and deleted_at is null
+  and permissions='{}'::jsonb;
+
+drop policy if exists td_customer_insert on public.td_customers;
+create policy td_customer_insert on public.td_customers for insert to authenticated
+with check (public.td_has_permission_v50('customer_create') and created_by=(select auth.uid()) and deleted_at is null and deleted_by is null);
+drop policy if exists td_customer_update on public.td_customers;
+create policy td_customer_update on public.td_customers for update to authenticated
+using (public.td_has_permission_v50('customer_edit'))
+with check (public.td_has_permission_v50('customer_edit'));
+
+drop policy if exists td_business_insert on public.td_orders;
+create policy td_business_insert on public.td_orders for insert to authenticated
+with check (public.td_has_permission_v50('order_create') and created_by=(select auth.uid()));
+drop policy if exists td_business_insert on public.td_parcels;
+create policy td_business_insert on public.td_parcels for insert to authenticated
+with check (public.td_has_permission_v50('parcel_create') and created_by=(select auth.uid()));
+drop policy if exists td_business_insert on public.td_payments;
+create policy td_business_insert on public.td_payments for insert to authenticated
+with check (public.td_has_permission_v50('finance_create') and created_by=(select auth.uid()));
+-- DRAFT: other RPCs, pickup/record mutations, and financial/reporting paths
+-- must be audited before release; this is not a complete authorization migration.
