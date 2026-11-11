@@ -108,3 +108,10 @@ test('pickup finance isolation is explicitly tracked before release',()=>{
  // all receipt rows. This is a known unresolved release blocker.
  assert.match(sql,/td_has_permission_v50\('finance_view'\)/);
 });
+
+test('report preview and CSV both require finance_export in the UI',()=>{
+ assert.match(html,/function tdCanExportFinance\(\)/);
+ assert.match(html,/m\.permissions\?\.finance_export===true/);
+ assert.match(html,/async function tdReportOpen\(\)\{if\(!tdCanExportFinance\(\)\)/);
+ assert.match(html,/async function tdReportCSV\(\)\{if\(!tdCanExportFinance\(\)\)/);
+});
