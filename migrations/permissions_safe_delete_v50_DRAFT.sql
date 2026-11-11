@@ -8,7 +8,7 @@ returns boolean language sql stable security definer set search_path='' as $$
  select exists (
  select 1 from public.td_members m
  where m.id=(select auth.uid()) and m.active=true and m.deleted_at is null
- and (m.role='owner' or (m.role='staff' and coalesce((m.permissions ->> p_permission)::boolean,false)))
+ and (m.role='owner' or (m.role='staff' and (coalesce((m.permissions ->> p_permission)::boolean,false) or (p_permission='order_delete' and m.can_hide_orders=true))))
  );
 $$;
 revoke all on function public.td_has_permission_v50(text) from public,anon;
