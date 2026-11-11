@@ -134,13 +134,8 @@ with check (public.td_has_permission_v50('customer_edit'));
 drop policy if exists td_business_insert on public.td_orders;
 create policy td_business_insert on public.td_orders for insert to authenticated
 with check (public.td_has_permission_v50('order_create') and created_by=(select auth.uid()));
--- Existing order UPDATE policy only permits owner; activate the explicit order_edit switch.
--- RLS alone is insufficient for field-level restrictions; validate mutable columns
--- before release to prevent unauthorized changes to money and ownership.
-drop policy if exists td_order_update on public.td_orders;
-create policy td_order_update on public.td_orders for update to authenticated
-using (public.td_has_permission_v50('order_edit'))
-with check (public.td_has_permission_v50('order_edit'));
+-- Order editing remains owner-only until field-level controls and an audited
+-- staff edit RPC are implemented; do not grant broad order UPDATE to staff.
 drop policy if exists td_business_insert on public.td_parcels;
 create policy td_business_insert on public.td_parcels for insert to authenticated
 with check (public.td_has_permission_v50('parcel_create') and created_by=(select auth.uid()));
