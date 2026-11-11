@@ -245,3 +245,10 @@ using (
  or public.td_has_permission_v50('pickup_create')
  or public.td_has_permission_v50('pickup_edit')
 );
+
+
+-- Trigger functions run through their triggers, not via client RPC.
+-- Remove default PUBLIC EXECUTE to reduce exposed privileged surface.
+revoke all on function public.td_guard_payment_permission_v50() from public, anon, authenticated;
+revoke all on function public.td_guard_pickup_permission_v50() from public, anon, authenticated;
+revoke all on function public.td_guard_pickup_receipt_permission_v50() from public, anon, authenticated;
