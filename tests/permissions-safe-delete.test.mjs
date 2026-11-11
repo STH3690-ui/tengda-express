@@ -52,3 +52,10 @@ test('actual staff-auth approval RPC denies deleted staff',()=>{
  assert.match(sql,/create or replace function public\.td_set_staff_active_v32\(p_member uuid,p_active boolean\)/);
  assert.match(sql,/where id=p_member and role='staff' and deleted_at is null/);
 });
+
+test('both legacy membership guards deny soft-deleted accounts',()=>{
+ assert.match(sql,/create or replace function public\.td_is_active_v32\(\)/);
+ assert.match(sql,/where id=\(select auth\.uid\(\)\) and active=true and deleted_at is null/);
+ assert.match(sql,/create or replace function public\.td_is_active\(\)/);
+ assert.match(sql,/select public\.td_is_active_v32\(\)/);
+});
