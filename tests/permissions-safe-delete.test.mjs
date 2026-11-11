@@ -80,3 +80,17 @@ test('privileged RPC cannot bypass finance permission on payment ledger inserts'
  assert.match(sql,/create trigger td_payment_permission_v50 before insert on public\.td_payments/);
  assert.match(sql,/if not public\.td_has_permission_v50\('finance_create'\)/);
 });
+
+test('report rows and CSV use filtered live orders while preserving payment ledger',()=>{
+ const report=html.match(/function tdReportData\(\)\{[\s\S]*?\}\}\nasync function tdFreightPeriod/);
+ assert.ok(report,'report function must be present');
+ assert.match(report[0],/orders=data\.td_orders\.filter\(x=>!hiddenOrderIds\.has\(x\.id\)/);
+ assert.match(report[0],/payments=data\.td_payments\.filter\(x=>tdDashWithin\(x,'created_at'\)\)/);
+ assert.match(html,/async function tdReportRows\(\)\{const r=tdReportData\(\)/);
+ assert.match(html,/const csv='\\uFEFF'/);
+ assert.match(html,/r\.rows/);
+});
+test('staff permission editor does not equate front-end switches with server-side RLS',()=>{
+ assert.match(sql,/create or replace function public\.td_has_permission_v50/);
+ assert.match(html,/td_owner_set_permissions_v50/);
+});
