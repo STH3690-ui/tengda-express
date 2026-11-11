@@ -24,3 +24,14 @@ test('hidden orders excluded from standard order reporting',()=>{
  assert.match(html,/const orders=data\.td_orders\.filter\(x=>!hiddenOrderIds\.has\(x\.id\)/);
  assert.match(html,/allOs=data\.td_orders\.filter\(x=>!hiddenOrderIds\.has\(x\.id\)/);
 });
+
+test('deleted staff cannot be approved by old server RPC or UI',()=>{
+ assert.match(sql,/create or replace function public\.td_owner_set_member_active_v30\(p_active boolean,p_member uuid\)/);
+ assert.match(sql,/where id=p_member and role='staff' and deleted_at is null/);
+ assert.match(html,/x\.deleted_at\?'已删除'/);
+ assert.match(html,/x\.deleted_at\?'':`<button class="secondary" onclick="tdSetStaffActive/);
+});
+test('new RPC endpoints are explicitly allowed by network proxy',()=>{
+ const proxy=readFileSync('netlify/lib/supabase-proxy.mjs','utf8');
+ for(const rpc of ['td_owner_set_permissions_v50','td_owner_soft_delete_staff_v50','td_owner_restore_staff_v50'])assert.ok(proxy.includes("'"+rpc+"'"),rpc);
+});
