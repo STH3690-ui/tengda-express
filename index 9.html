@@ -137,6 +137,20 @@ body[data-td-page] #page .td-colored-form button.primary,#page button.primary{ba
 #page tbody tr:nth-child(even){background:#fffaf0}
 #page .msg{border-left:4px solid #d5aa3e}
 @media(max-width:699px){.nav{padding:11px 9px!important;gap:8px!important}.nav button{min-height:45px!important}body[data-td-page] #page .td-colored-form{padding:13px 11px!important}#page .td-order-grid .td-order-section{margin:17px 0 7px!important}#page .panel{margin:10px 8px}#page .td-order-grid input,#page .td-order-grid select{font-size:16px!important}}
+
+/* V3 small controls: buttons, select arrows, actions and compact touch targets */
+#page button:not(.primary):not(.secondary),#page input[type=button],#page input[type=submit]{border-radius:11px;border:1px solid #c7a451;background:linear-gradient(145deg,#fff8e5,#f1dfab);color:#292317;font-weight:700;box-shadow:0 2px 0 #caa344;min-height:40px;padding:8px 12px}
+#page button:not(.primary):not(.secondary):hover{background:#ffe69a}
+#page button:not(.primary):not(.secondary):active{transform:translateY(1px);box-shadow:0 1px 0 #caa344}
+#page button[disabled]{opacity:.5;box-shadow:none}
+#page select{appearance:none;-webkit-appearance:none;background-color:#fffdf8!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23a47b1f' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right 13px center!important;padding-right:40px!important;border-color:#d1b46d!important}
+#page input[type=checkbox],#page input[type=radio]{accent-color:#c59a2f;min-height:unset;width:auto}
+#page .scroll button,#page td button{min-height:38px!important;margin:2px 3px 2px 0}
+#page .scroll button.primary,#page td button.primary{background:#191919!important;color:#ffdc68!important}
+#page .scroll button.secondary,#page td button.secondary{background:#fff4d5!important;color:#302714!important}
+#page .td-order-results button{background:#ffdb6b!important;border-color:#c99e34!important;color:#211a0c!important}
+#page button.danger,#page .danger button{background:#fff0ed!important;color:#a22b2b!important;border-color:#d69b95!important;box-shadow:none!important}
+@media(max-width:699px){#page td button,#page .scroll button{min-height:42px!important;padding:8px 11px!important}#page select{background-position:right 11px center!important}}
 </style><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="腾达快递"><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script></head><body><header class="td-hero"><div class="wrap td-hero-inner"><div class="td-brand"><div class="td-burmese" lang="my">ထိန်တာ</div><h1>腾达快递站</h1><div class="td-english">TENG DA EXPRESS STATION</div><div id="who" class="muted">云端业务管理 · 手机 / 电脑</div><div class="td-benefits"><span>▣ 快速</span><span>◆ 安全</span><span>▤ 可靠</span><span>◎ 全球</span></div></div></div></header><div class="wrap">
 
 <section id="auth" class="panel hidden"><h2>腾达快递站 · 用户登录</h2><form id="loginForm"><label>用户名</label><input name="username" required maxlength="254" autocapitalize="none" autocomplete="username"><label>密码</label><input name="password" type="password" required autocomplete="current-password"><p><button class="primary">登录</button></p></form><p class="muted">账号注册后需等待管理员审核。已有邮箱账号可使用原邮箱登录。<button type="button" class="secondary" onclick="tdToggleRegistration()">注册账号</button></p></section>
