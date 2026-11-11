@@ -123,3 +123,11 @@ test('report preview and CSV both require finance_export in the UI',()=>{
  assert.match(html,/async function tdReportOpen\(\)\{if\(!tdCanExportFinance\(\)\)/);
  assert.match(html,/async function tdReportCSV\(\)\{if\(!tdCanExportFinance\(\)\)/);
 });
+
+test('pickup operational balance uses restricted RPC without raw receipt access',()=>{
+ assert.match(sql,/create or replace function public\.td_pickup_balances_authorized_v50\(\)/);
+ assert.match(sql,/revoke select on public\.td_pickup_balances_v32 from authenticated,anon/);
+ assert.match(html,/db\.rpc\('td_pickup_balances_authorized_v50'\)/);
+ assert.match(sql,/as restrictive for select to authenticated using \(public\.td_has_permission_v50\('finance_view'\)\)/);
+ assert.doesNotMatch(html,/db\.from\('td_pickup_balances_v32'\)/);
+});
