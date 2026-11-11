@@ -264,3 +264,27 @@ using (
  or public.td_has_permission_v50('pickup_edit')
  or public.td_has_permission_v50('finance_view')
 );
+
+
+-- Return only operational balance aggregates to pickup-authorized staff.
+-- Raw receipt records are reserved for finance_view users.
+create or replace function public.td_pickup_balances_authorized_v50()
+returns table(batch_id uuid,customer_id uuid,receivable_mmk numeric,paid_mmk numeric,due_mmk numeric,created_at timestamptz,is_v32 boolean)
+language sql stable security definer set search_path='' as $$
+select b.id,b.customer_id,b.freight_mmk,
+coalesce(r.paid_mmk,0::numeric),
+greatest(b.freight_mmk-coalesce(r.paid_mmk,0::numeric),0::numeric),
+b.created_at,(v.batch_id is not null)
+from public.td_pickup_batches b
+left join public.td_pickup_v32_batches v on v.batch_id=b.id
+left join (select batch_id,sum(amount_mmk) paid_mmk from public.td_pickup_receipts_v32 group by batch_id) r on r.batch_id=b.id
+where public.td_has_permission_v50('pickup_create')
+or public.td_has_permission_v50('pickup_edit')
+or public.td_has_permission_v50('finance_view')
+$$;
+revoke all on function public.td_pickup_balances_authorized_v50() from public,anon;
+grant execute on function public.td_pickup_balances_authorized_v50() to authenticated;
+drop policy if exists td_pickup_receipt_select_permission_v50 on public.td_pickup_receipts_v32;
+create policy td_pickup_receipt_select_permission_v50 on public.td_pickup_receipts_v32
+as restrictive for select to authenticated using (public.td_has_permission_v50('finance_view'));
+revoke select on public.td_pickup_balances_v32 from authenticated,anon;
