@@ -94,3 +94,11 @@ test('staff permission editor does not equate front-end switches with server-sid
  assert.match(sql,/create or replace function public\.td_has_permission_v50/);
  assert.match(html,/td_owner_set_permissions_v50/);
 });
+
+test('legacy broad UPDATE policies are constrained by restrictive granular guards',()=>{
+ for(const [table,permission] of [['td_payments','finance_edit'],['td_pickup_batches','pickup_edit']]){
+  const name=table==='td_payments'?'td_payment_update_permission_v50':'td_pickup_batch_update_permission_v50';
+  assert.ok(sql.includes('create policy '+name+' on public.'+table),name);
+  assert.match(sql.slice(sql.indexOf('create policy '+name)),new RegExp("as restrictive for update to authenticated[\\s\\S]*?td_has_permission_v50\\('"+permission+"'\\)"));
+ }
+});
