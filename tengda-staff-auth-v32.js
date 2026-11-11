@@ -12,7 +12,7 @@ async function tdStaffRequest(body) {
     const context = error.context;
     if (context && typeof context.status === 'number') {
       message += '（HTTP ' + context.status + '）';
-      try { const response = await context.clone().json(); if (response?.message) message = response.message + '（HTTP ' + context.status + '）'; } catch {}
+      try { const response = await context.clone().json(); if (response?.message || response?.error) message = (response.message || response.error) + '（HTTP ' + context.status + '）'; } catch {}
     } else if (controller.signal.aborted) {
       message = '账号服务连接超时（30秒），请切换网络重试';
     } else {

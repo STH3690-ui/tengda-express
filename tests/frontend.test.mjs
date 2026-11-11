@@ -36,6 +36,7 @@ test('frontend never constructs example-domain Auth addresses or calls privilege
 
 function loadAuth(f){f.run('connect=()=>{}');f.run(readFileSync(new URL('../tengda-staff-auth-v32.js',import.meta.url),'utf8'));}
 test('server login errors are presented without misreporting a deployment failure',async()=>{const f=frontend();loadAuth(f);f.run("db={functions:{async invoke(){return {error:{context:Response.json({message:'账号已停用'},{status:403})}}}}}");await assert.rejects(f.run("tdStaffRequest({action:'login'})"),/账号已停用/);});
+test('proxy errors reveal safe diagnostic codes without exposing secrets',async()=>{const f=frontend();loadAuth(f);f.run("db={functions:{async invoke(){return {error:{context:Response.json({error:'upstream_unreachable'},{status:502})}}}}}");await assert.rejects(f.run("tdStaffRequest({action:'login'})"),/upstream_unreachable.*HTTP 502/);});
 test('transport failures use a safe actionable error',async()=>{const f=frontend();loadAuth(f);f.run("db={functions:{async invoke(){return {error:{}}}}}");await assert.rejects(f.run("tdStaffRequest({action:'login'})"),/网络/);});
 
 test('authorized employees hide orders through the safe RPC, never delete a table row',async()=>{const f=frontend();f.run("canHideOrders=true;data.td_orders=[{id:'order1',item_name:'Original'}];notify=()=>{};refresh=async()=>{};let called='';db={async rpc(name){called=name;return {}}}");await f.run("deleteOrder('order1')");assert.equal(f.run('called'),'td_staff_hide_order');assert.equal(f.run('data.td_orders.length'),1);});
