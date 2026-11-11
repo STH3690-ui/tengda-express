@@ -76,3 +76,15 @@ end $$;
 revoke all on function public.td_staff_hide_order(uuid) from public,anon;
 grant execute on function public.td_staff_hide_order(uuid) to authenticated;
 -- All other business write policies and privileged RPCs still need review before release.
+
+-- Existing approval RPC must also reject deleted staff, not just hide the UI button.
+create or replace function public.td_owner_set_member_active_v30(p_active boolean,p_member uuid)
+returns void language plpgsql security definer set search_path='' as $$
+begin
+ if not public.td_is_owner_v32() then raise exception '只有管理员可以审批员工' using errcode='42501';end if;
+ update public.td_members set active=p_active
+ where id=p_member and role='staff' and deleted_at is null;
+ if not found then raise exception '员工不存在、已删除或不能修改管理员账号';end if;
+end $$;
+revoke all on function public.td_owner_set_member_active_v30(boolean,uuid) from public,anon;
+grant execute on function public.td_owner_set_member_active_v30(boolean,uuid) to authenticated;
