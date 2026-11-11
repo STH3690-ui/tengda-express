@@ -67,4 +67,12 @@ begin
 end $$;
 revoke all on function public.td_staff_hide_order(uuid,text) from public,anon;
 grant execute on function public.td_staff_hide_order(uuid,text) to authenticated;
--- Old one-argument RPC remains for legacy clients. Before release, revoke its execution\n-- or replace it with a safe rejection wrapper, then verify all clients use the two-argument RPC.\n-- WARNING: Other CRUD endpoints still need permission enforcement before release.
+-- Block the legacy one-argument RPC to enforce the deletion reason.
+create or replace function public.td_staff_hide_order(p_order_id uuid)
+returns void language plpgsql security invoker set search_path='' as $$
+begin
+ raise exception '客户端版本过旧，请刷新页面后填写删除原因' using errcode='42501';
+end $$;
+revoke all on function public.td_staff_hide_order(uuid) from public,anon;
+grant execute on function public.td_staff_hide_order(uuid) to authenticated;
+-- All other business write policies and privileged RPCs still need review before release.
