@@ -47,3 +47,8 @@ test('staff-auth blocks deleted employees before unbanning credentials',()=>{
  const unban=edge.indexOf("ban_duration: 'none'");
  assert.ok(check>=0 && unban>check,'deleted staff must be rejected before Auth unban');
 });
+
+test('actual staff-auth approval RPC denies deleted staff',()=>{
+ assert.match(sql,/create or replace function public\.td_set_staff_active_v32\(p_member uuid,p_active boolean\)/);
+ assert.match(sql,/where id=p_member and role='staff' and deleted_at is null/);
+});
