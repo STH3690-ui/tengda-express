@@ -151,6 +151,22 @@ body[data-td-page] #page .td-colored-form button.primary,#page button.primary{ba
 #page .td-order-results button{background:#ffdb6b!important;border-color:#c99e34!important;color:#211a0c!important}
 #page button.danger,#page .danger button{background:#fff0ed!important;color:#a22b2b!important;border-color:#d69b95!important;box-shadow:none!important}
 @media(max-width:699px){#page td button,#page .scroll button{min-height:42px!important;padding:8px 11px!important}#page select{background-position:right 11px center!important}}
+
+/* V4 all interactive controls, including dynamically rendered and compact actions */
+body button,body input[type="button"],body input[type="submit"],body input[type="reset"],body [role="button"]{appearance:none;-webkit-appearance:none;min-height:42px;border:1.5px solid #d4ab41!important;border-radius:12px!important;background:linear-gradient(145deg,#242322,#111214)!important;color:#ffdb67!important;font-family:inherit;font-weight:750!important;letter-spacing:.1px;box-shadow:0 3px 0 #b88b25!important;transition:filter .15s,transform .15s,box-shadow .15s}
+body button:hover:not(:disabled),body [role="button"]:hover{filter:brightness(1.16)}
+body button:active:not(:disabled),body [role="button"]:active{transform:translateY(2px);box-shadow:0 1px 0 #b88b25!important}
+body button:disabled,body input[type="submit"]:disabled{opacity:.45;box-shadow:none!important}
+body button:focus-visible,body [role="button"]:focus-visible{outline:3px solid #f7ce5a;outline-offset:2px}
+body .nav button{background:#232324!important;color:#ffe5a3!important}
+body .nav button.active,body button.active,body button[aria-selected="true"]{background:linear-gradient(135deg,#ffdf78,#dfac30)!important;color:#191714!important;border-color:#b98b26!important}
+body button.secondary,body button[class*="secondary"]{background:linear-gradient(145deg,#fff8e6,#f5df9f)!important;color:#2d2513!important}
+body button.danger,body button[class*="danger"]{background:#5a2222!important;color:#ffe2db!important;border-color:#d48c82!important}
+body select{border:1.5px solid #cda84c!important;border-radius:12px!important;background-color:#fffaf0!important;color:#242018!important}
+body input[type="checkbox"],body input[type="radio"]{accent-color:#cba13d}
+body button svg,body button i{color:inherit}
+@media(max-width:699px){body button,body input[type="button"],body input[type="submit"],body [role="button"]{min-height:44px}body td button{padding:8px 10px!important}}
+@media(prefers-reduced-motion:reduce){body button,body [role="button"]{transition:none}}
 </style><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="腾达快递"><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script></head><body><header class="td-hero"><div class="wrap td-hero-inner"><div class="td-brand"><div class="td-burmese" lang="my">ထိန်တာ</div><h1>腾达快递站</h1><div class="td-english">TENG DA EXPRESS STATION</div><div id="who" class="muted">云端业务管理 · 手机 / 电脑</div><div class="td-benefits"><span>▣ 快速</span><span>◆ 安全</span><span>▤ 可靠</span><span>◎ 全球</span></div></div></div></header><div class="wrap">
 
 <section id="auth" class="panel hidden"><h2>腾达快递站 · 用户登录</h2><form id="loginForm"><label>用户名</label><input name="username" required maxlength="254" autocapitalize="none" autocomplete="username"><label>密码</label><input name="password" type="password" required autocomplete="current-password"><p><button class="primary">登录</button></p></form><p class="muted">账号注册后需等待管理员审核。已有邮箱账号可使用原邮箱登录。<button type="button" class="secondary" onclick="tdToggleRegistration()">注册账号</button></p></section>
