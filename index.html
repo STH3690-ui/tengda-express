@@ -100,7 +100,18 @@ async function tdCheckMember(){if(!user)return false;const {data:m,error}=await 
 async function enter(){if(!await tdCheckMember())return;$('auth').classList.add('hidden');$('app').classList.remove('hidden');await refresh();}
 // Recheck active membership even for an already open tab. Database checks remain authoritative.
 setInterval(()=>{if(user)tdCheckMember().catch(()=>{tdClearSessionView();});},30000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&user)tdCheckMember().catch(()=>tdClearSessionView());});
+// Returning to a backgrounded mobile tab must reload authoritative totals, not stale in-memory orders.
+let tdLastForegroundRefresh=0;
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden||!user)return;
+ tdCheckMember().then(ok=>{
+  if(!ok)return;
+  const now=Date.now();
+  if(now-tdLastForegroundRefresh<5000)return;
+  tdLastForegroundRefresh=now;
+  return refresh();
+ }).catch(()=>tdClearSessionView());
+});
 async function logout(){await db.auth.signOut();location.reload()}
 async function refresh(){
   try {
