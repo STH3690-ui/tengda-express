@@ -99,3 +99,17 @@ begin
 end $$;
 revoke all on function public.td_owner_hide_order_v41(uuid) from public,anon;
 grant execute on function public.td_owner_hide_order_v41(uuid) to authenticated;
+
+-- The deployed staff-auth Edge Function calls this RPC, not td_owner_set_member_active_v30.
+-- Guard the actual activation path against deleted employees.
+create or replace function public.td_set_staff_active_v32(p_member uuid,p_active boolean)
+returns void language plpgsql security definer set search_path='' as $$
+begin
+ if not public.td_is_owner_v32() then raise exception 'Owner required' using errcode='42501';end if;
+ if p_active is null then raise exception 'Status required';end if;
+ update public.td_members set active=p_active
+ where id=p_member and role='staff' and deleted_at is null;
+ if not found then raise exception 'Staff account not found or deleted';end if;
+end $$;
+revoke all on function public.td_set_staff_active_v32(uuid,boolean) from public,anon;
+grant execute on function public.td_set_staff_active_v32(uuid,boolean) to authenticated;
