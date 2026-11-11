@@ -168,7 +168,10 @@ async function deleteOrder(id){
 
  const question='确定删除错误商品「'+x.item_name+'」吗？该商品将从订单、数量、金额及常规统计中排除；已发生的真实收付款流水仍保留，管理员可以从回收站恢复。';
  if(!confirm(question))return;
- const {error}=await db.rpc('td_staff_hide_order',{p_order_id:id});
+ const reason=prompt('请填写删除商品原因（至少3个字）：');
+ if(reason===null)return;
+ if(reason.trim().length<3)return notify('删除原因至少3个字',true);
+ const {error}=await db.rpc('td_staff_hide_order',{p_order_id:id,p_reason:reason.trim()});
  if(error)return notify('订单移除失败：'+error.message,true);
  notify('商品已删除并排除正常订单统计；原始资金流水保留');
  await refresh();
