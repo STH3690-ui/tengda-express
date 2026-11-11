@@ -151,6 +151,31 @@ body[data-td-page] #page .td-colored-form button.primary,#page button.primary{ba
 #page .td-order-results button{background:#ffdb6b!important;border-color:#c99e34!important;color:#211a0c!important}
 #page button.danger,#page .danger button{background:#fff0ed!important;color:#a22b2b!important;border-color:#d69b95!important;box-shadow:none!important}
 @media(max-width:699px){#page td button,#page .scroll button{min-height:42px!important;padding:8px 11px!important}#page select{background-position:right 11px center!important}}
+
+/* V4 GLOBAL BUTTON SYSTEM — covers dynamically rendered buttons on every screen */
+:root{--td-btn-black:#191919;--td-btn-gold:#f7cf63;--td-btn-stroke:#cba33e}
+body button,body [role="button"],body input[type="button"],body input[type="submit"],body input[type="reset"]{
+ -webkit-appearance:none;appearance:none;
+ background:#1b1b1d!important;color:#ffe08a!important;
+ border:1.5px solid #d6ad44!important;border-radius:12px!important;
+ box-shadow:0 3px 0 #a98432!important;
+ padding:10px 14px!important;min-height:42px!important;
+ font:inherit;font-weight:750!important;line-height:1.3!important;
+ text-align:center;cursor:pointer;transition:background-color .15s,transform .15s!important;
+}
+body button:hover:not(:disabled),body [role="button"]:hover{background:#353022!important;color:#fff0b8!important}
+body button:active:not(:disabled),body [role="button"]:active{transform:translateY(2px)!important;box-shadow:0 1px 0 #a98432!important}
+body button:disabled,body input[type="submit"]:disabled{opacity:.5!important;box-shadow:none!important;cursor:not-allowed!important}
+body button:focus-visible,body [role="button"]:focus-visible{outline:3px solid #f7c84e!important;outline-offset:2px!important}
+body .nav button{background:#242427!important;color:#f9e6b4!important;border-color:#7f652e!important;box-shadow:none!important;white-space:nowrap}
+body .nav button.active{background:linear-gradient(135deg,#ffdd72,#e6b137)!important;color:#171717!important;border-color:#f1c44b!important;box-shadow:0 3px 0 #b4872b!important}
+body button.primary,body input[type="submit"]{background:linear-gradient(135deg,#141518,#302a20)!important;color:#ffe07c!important}
+body button.secondary{background:#fff3cd!important;color:#292317!important;border-color:#c8a04c!important}
+body button.danger,body button[class*="delete"],body button[class*="remove"]{background:#812c2c!important;color:#fff5f3!important;border-color:#e7a3a3!important;box-shadow:0 3px 0 #622121!important}
+body button svg,body button i{color:inherit}
+body select{border:1.5px solid #cba749!important;border-radius:12px!important}
+@media(max-width:699px){body button,body [role="button"],body input[type="button"],body input[type="submit"]{min-height:44px!important;padding:10px 12px!important}body td button{min-height:40px!important;padding:9px 10px!important}}
+@media(prefers-reduced-motion:reduce){body button,body [role="button"]{transition:none!important}}
 </style><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="腾达快递"><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script></head><body><header class="td-hero"><div class="wrap td-hero-inner"><div class="td-brand"><div class="td-burmese" lang="my">ထိန်တာ</div><h1>腾达快递站</h1><div class="td-english">TENG DA EXPRESS STATION</div><div id="who" class="muted">云端业务管理 · 手机 / 电脑</div><div class="td-benefits"><span>▣ 快速</span><span>◆ 安全</span><span>▤ 可靠</span><span>◎ 全球</span></div></div></div></header><div class="wrap">
 
 <section id="auth" class="panel hidden"><h2>腾达快递站 · 用户登录</h2><form id="loginForm"><label>用户名</label><input name="username" required maxlength="254" autocapitalize="none" autocomplete="username"><label>密码</label><input name="password" type="password" required autocomplete="current-password"><p><button class="primary">登录</button></p></form><p class="muted">账号注册后需等待管理员审核。已有邮箱账号可使用原邮箱登录。<button type="button" class="secondary" onclick="tdToggleRegistration()">注册账号</button></p></section>
