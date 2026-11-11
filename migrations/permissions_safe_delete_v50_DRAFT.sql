@@ -231,3 +231,17 @@ drop policy if exists td_payment_select_permission_v50 on public.td_payments;
 create policy td_payment_select_permission_v50 on public.td_payments
 as restrictive for select to authenticated
 using (public.td_has_permission_v50('finance_view'));
+
+
+-- Pickup staff require receipt totals for outstanding-balance calculations.
+-- Deny receipt reads to staff who have neither pickup access nor finance access.
+-- TODO before release: replace raw receipt access with a scoped balance RPC,
+-- so pickup-only employees cannot enumerate unrelated receipt details.
+drop policy if exists td_pickup_receipt_select_permission_v50 on public.td_pickup_receipts_v32;
+create policy td_pickup_receipt_select_permission_v50 on public.td_pickup_receipts_v32
+as restrictive for select to authenticated
+using (
+ public.td_has_permission_v50('finance_view')
+ or public.td_has_permission_v50('pickup_create')
+ or public.td_has_permission_v50('pickup_edit')
+);
