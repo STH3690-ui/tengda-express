@@ -175,6 +175,15 @@ body button svg,body button i{color:inherit}
 .td-nav-icon .td-v5-icon{width:18px;height:18px;color:#f4c755}
 .nav button.active .td-nav-icon .td-v5-icon{color:#1d1b16}
 .td-v5-button-icon{margin-right:6px}.td-v5-button-icon .td-v5-icon{width:16px;height:16px}
+
+/* Brand icon visual system */
+.td-brand-vector{display:inline-flex;align-items:center;justify-content:center;flex:none;width:20px;height:20px;vertical-align:middle;color:#e0b343}
+.td-brand-vector svg{width:100%;height:100%;display:block}
+.td-field-icon{background:#18191b!important;border:1px solid #c99f3d!important}
+.td-field-icon .td-brand-vector{width:17px;height:17px;color:#ffdb68}
+.td-nav-icon .td-brand-vector{width:19px;height:19px;color:#f5c75c}
+.nav button.active .td-brand-vector{color:#1c1b17}
+button>.td-brand-vector{margin-right:6px}
 </style><link rel="manifest" href="./manifest.webmanifest"><link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="腾达快递"><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script></head><body><header class="td-hero"><div class="wrap td-hero-inner"><div class="td-brand"><div class="td-burmese" lang="my">ထိန်တာ</div><h1>腾达快递站</h1><div class="td-english">TENG DA EXPRESS STATION</div><div id="who" class="muted">云端业务管理 · 手机 / 电脑</div><div class="td-benefits"><span>▣ 快速</span><span>◆ 安全</span><span>▤ 可靠</span><span>◎ 全球</span></div></div></div></header><div class="wrap">
 
 <section id="auth" class="panel hidden"><h2>腾达快递站 · 用户登录</h2><form id="loginForm"><label>用户名</label><input name="username" required maxlength="254" autocapitalize="none" autocomplete="username"><label>密码</label><input name="password" type="password" required autocomplete="current-password"><p><button class="primary">登录</button></p></form><p class="muted">账号注册后需等待管理员审核。已有邮箱账号可使用原邮箱登录。<button type="button" class="secondary" onclick="tdToggleRegistration()">注册账号</button></p></section>
@@ -248,7 +257,33 @@ async function refresh(){
   }
 }
 const tabs=[['dashboard','总览'],['customers','客户'],['orders','代买代付'],['parcels','包裹入库'],['query','客户包裹查询'],['pickups','取件'],['payments','收付款'],['records','记录查询'],['deletions','删除历史'],['cleanup','过期清理'],['staff','账号管理'],['staffAudit','员工录入明细'],['stations','站点地址']];
-function tdDecorateFormFields(){const root=$('page');if(!root)return;const rules=[[/客户|姓名|电话|账号|员工|用户/,'👤'],[/订单|商品|代买|代付|数量|单价|人民币|汇率/,'🛍️'],[/运单|包裹|入库|到站|件数|重量|公斤|类别|货物/,'📦'],[/运费|收费|费用|金额|付款|收款|欠款|余额|支付|方式|利润|成本/,'💰'],[/照片|图片|拍照|相册/,'📷'],[/日期|时间/,'📅'],[/取件|签收|领取/,'🚚'],[/搜索|查询|筛选/,'🔎'],[/备注|说明|内容|地址/,'📝'],[/密码|权限|状态|审批/,'🔐']];root.querySelectorAll('form label,.photo-box label,#tdDashTools label').forEach(label=>{if(label.querySelector('.td-field-icon'))return;const t=(label.textContent||'').trim();if(!t)return;const hit=rules.find(([re])=>re.test(t));const icon=hit?hit[1]:'✦';const span=document.createElement('span');span.className='td-field-icon';span.setAttribute('aria-hidden','true');span.textContent=icon;label.prepend(span)});root.querySelectorAll('form').forEach(form=>form.classList.add('td-colored-form'))}
+
+/* Decorative SVG icons. No mutation observer, no event handler replacement. */
+const tdIconPaths={
+users:'<circle cx="9" cy="8" r="3"/><path d="M2 21v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m1 4a5 5 0 0 1 5 5"/>',
+user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+box:'<path d="m12 2 9 5-9 5-9-5 9-5ZM3 7v10l9 5 9-5V7M12 12v10"/>',
+bag:'<path d="M5 8h14l1 13H4L5 8ZM9 9V6a3 3 0 0 1 6 0v3"/>',
+search:'<circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/>',
+truck:'<path d="M2 5h12v12H2zM14 9h4l4 4v4h-8"/><circle cx="7" cy="19" r="2"/><circle cx="18" cy="19" r="2"/>',
+money:'<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 9h.01M18 15h.01"/>',
+chart:'<path d="M3 21V12h4v9M10 21V4h4v17M17 21v-9h4v9"/>',
+list:'<path d="M9 6h12M9 12h12M9 18h12M3 6h.01M3 12h.01M3 18h.01"/>',
+edit:'<path d="m15 5 4 4M4 20l4-1 11-11a2 2 0 0 0-3-3L5 16l-1 4Z"/>',
+trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/>',
+calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>',
+camera:'<path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/>',
+lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+archive:'<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v12h14V9M10 13h4"/>',
+pin:'<path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
+shield:'<path d="M12 2 21 6v6c0 5-4 8-9 10-5-2-9-5-9-10V6z"/><path d="m8 12 3 3 5-6"/>',
+spark:'<path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2Z"/>'
+};
+function tdIconKind(s){s=String(s||'');const rules=[[/👥|👬|👫/u,'users'],[/👤|🧑|👨|👩/u,'user'],[/📦|📮/u,'box'],[/🛍|🛒|👜/u,'bag'],[/🔎|🔍/u,'search'],[/🚚|🚛/u,'truck'],[/💳|💰|💵|💸|💲|💴/u,'money'],[/📊|📈/u,'chart'],[/📋|📃|📑/u,'list'],[/✏|🖊|📝/u,'edit'],[/🗑|❌/u,'trash'],[/📅|📆/u,'calendar'],[/📷|📸/u,'camera'],[/🔐|🔒|🔑/u,'lock'],[/🗂|🗃/u,'archive'],[/📍/u,'pin'],[/🛡/u,'shield'],[/🧹|✦|✨/u,'spark']];const hit=rules.find(x=>x[0].test(s));return hit&&hit[1]}
+function tdBrandIcon(kind){const span=document.createElement('span');span.className='td-brand-vector';span.setAttribute('aria-hidden','true');span.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+tdIconPaths[kind]+'</svg>';return span}
+function tdRefreshVisualIcons(){document.querySelectorAll('.td-field-icon,.td-nav-icon').forEach(el=>{const kind=tdIconKind(el.textContent);if(kind){el.replaceChildren(tdBrandIcon(kind))}});document.querySelectorAll('#page button').forEach(btn=>{if(btn.querySelector('.td-brand-vector'))return;const first=Array.from(btn.childNodes).find(n=>n.nodeType===3&&n.textContent.trim());if(!first)return;const m=first.textContent.match(/^\s*([👥👤📦🛍🔎🔍🚚💳💰📊📋📑🗂📍🛡🧹📅📷📝✏🗑✨]+)/u);if(!m)return;const kind=tdIconKind(m[1]);if(!kind)return;first.textContent=first.textContent.slice(m[0].length).trimStart();btn.insertBefore(tdBrandIcon(kind),first)})}
+
+function tdDecorateFormFields(){const root=$('page');if(!root)return;const rules=[[/客户|姓名|电话|账号|员工|用户/,'👤'],[/订单|商品|代买|代付|数量|单价|人民币|汇率/,'🛍️'],[/运单|包裹|入库|到站|件数|重量|公斤|类别|货物/,'📦'],[/运费|收费|费用|金额|付款|收款|欠款|余额|支付|方式|利润|成本/,'💰'],[/照片|图片|拍照|相册/,'📷'],[/日期|时间/,'📅'],[/取件|签收|领取/,'🚚'],[/搜索|查询|筛选/,'🔎'],[/备注|说明|内容|地址/,'📝'],[/密码|权限|状态|审批/,'🔐']];root.querySelectorAll('form label,.photo-box label,#tdDashTools label').forEach(label=>{if(label.querySelector('.td-field-icon'))return;const t=(label.textContent||'').trim();if(!t)return;const hit=rules.find(([re])=>re.test(t));const icon=hit?hit[1]:'✦';const span=document.createElement('span');span.className='td-field-icon';span.setAttribute('aria-hidden','true');span.textContent=icon;label.prepend(span)});root.querySelectorAll('form').forEach(form=>form.classList.add('td-colored-form'));tdRefreshVisualIcons()}
 function render(){document.body.setAttribute('data-td-page',page);let list=tabs.filter(x=>!['staff','staffAudit','deletions','cleanup'].includes(x[0])||role==='owner');$('nav').innerHTML=list.map(x=>`<button class="${page===x[0]?'active':''}" onclick="page='${x[0]}';render()"><span class="td-nav-icon" aria-hidden="true">${({dashboard:'📊',customers:'👥',orders:'🛍️',parcels:'📦',query:'🔎',pickups:'🚚',payments:'💳',records:'📋',deletions:'🗂️',cleanup:'🧹',staff:'🛡️',staffAudit:'📑',stations:'📍'})[x[0]]||'✦'}</span>${x[1]}</button>`).join('');$('page').innerHTML=({dashboard:dashboard,customers:customers,orders:orders,parcels:parcels,query:parcelQuery,pickups:pickups,payments:payments,records:records,deletions:deletions,cleanup:tdCleanupPage,staff:staff,staffAudit:tdStaffAuditPage,stations:tdStationPage})[page]();tdDecorateFormFields();if(page==='pickups'){loadPickupBatches();tdLoadDebts();}if(page==='dashboard')tdLoadFinance();if(page==='query'){renderQueryResults();}if(page==='records')filterRecords();if(page==='staffAudit')tdAuditRenderResults();if(page==='deletions')loadDeletionLogs();if(page==='stations')tdLoadStations();}
 let tdDashPreset='live',tdDashFrom='',tdDashTo='';
 function tdDashISO(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
