@@ -40,3 +40,10 @@ test('legacy owner hide RPC delegates to reasoned RPC, not blocked legacy RPC',(
  assert.match(sql,/create or replace function public\.td_owner_hide_order_v41\(p_order_id uuid\)/);
  assert.match(sql,/perform public\.td_staff_hide_order\(p_order_id,'管理员从历史订单移除'\)/);
 });
+
+test('staff-auth blocks deleted employees before unbanning credentials',()=>{
+ const edge=readFileSync('supabase/functions/staff-auth/handler.mjs','utf8');
+ const check=edge.indexOf("!target.deleted_at");
+ const unban=edge.indexOf("ban_duration: 'none'");
+ assert.ok(check>=0 && unban>check,'deleted staff must be rejected before Auth unban');
+});
