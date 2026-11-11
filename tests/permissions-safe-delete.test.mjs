@@ -67,3 +67,10 @@ test('direct-write RLS draft checks granular permissions for all core insert pat
  for(const permission of ['customer_create','customer_edit','order_create','parcel_create','finance_create'])
   assert.ok(sql.includes("public.td_has_permission_v50('"+permission+"')"),permission);
 });
+
+test('pickup RPC writes are protected by database trigger guards',()=>{
+ for(const table of ['td_pickup_batches','td_pickups','td_pickup_receipts_v32'])
+  assert.ok(sql.includes('before insert on public.'+table),table);
+ assert.ok(sql.includes("td_has_permission_v50('pickup_create')"));
+ assert.ok(sql.includes("td_has_permission_v50('finance_create')"));
+});
