@@ -102,3 +102,9 @@ test('legacy broad UPDATE policies are constrained by restrictive granular guard
   assert.match(sql.slice(sql.indexOf('create policy '+name)),new RegExp("as restrictive for update to authenticated[\\s\\S]*?td_has_permission_v50\\('"+permission+"'\\)"));
  }
 });
+
+test('pickup finance isolation is explicitly tracked before release',()=>{
+ // The existing receipt SELECT policy allows every active employee to read
+ // all receipt rows. This is a known unresolved release blocker.
+ assert.match(sql,/td_has_permission_v50\('finance_view'\)/);
+});
