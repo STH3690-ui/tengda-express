@@ -88,3 +88,14 @@ begin
 end $$;
 revoke all on function public.td_owner_set_member_active_v30(boolean,uuid) from public,anon;
 grant execute on function public.td_owner_set_member_active_v30(boolean,uuid) to authenticated;
+
+-- Preserve owner-only legacy removal while enforcing a documented reason.
+-- The original owner RPC delegated to the old one-argument staff RPC.
+create or replace function public.td_owner_hide_order_v41(p_order_id uuid)
+returns void language plpgsql security definer set search_path='' as $$
+begin
+ if not public.td_is_owner_v32() then raise exception '仅管理员可移除历史订单' using errcode='42501';end if;
+ perform public.td_staff_hide_order(p_order_id,'管理员从历史订单移除');
+end $$;
+revoke all on function public.td_owner_hide_order_v41(uuid) from public,anon;
+grant execute on function public.td_owner_hide_order_v41(uuid) to authenticated;
