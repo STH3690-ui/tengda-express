@@ -288,3 +288,12 @@ drop policy if exists td_pickup_receipt_select_permission_v50 on public.td_picku
 create policy td_pickup_receipt_select_permission_v50 on public.td_pickup_receipts_v32
 as restrictive for select to authenticated using (public.td_has_permission_v50('finance_view'));
 revoke select on public.td_pickup_balances_v32 from authenticated,anon;
+
+-- Harden legacy direct pickup RPC while preserving its existing body.
+do $guard$ declare src text;begin
+src:=pg_get_functiondef('public.td_record_pickup(uuid,integer,text,text,text,text)'::regprocedure);
+if position('td_has_permission_v50(' in src)>0 then return;end if;
+if position('if not public.td_is_active_v32() then raise exception' in src)=0 then raise exception 'unexpected function body';end if;
+src:=replace(src,'if not public.td_is_active_v32() then raise exception ''账号未批准或已停用'' using errcode=''42501'';end if;','if not public.td_has_permission_v50(''pickup_create'') then raise exception ''没有办理取件权限'' using errcode=''42501'';end if;');
+execute src;
+end $guard$;
