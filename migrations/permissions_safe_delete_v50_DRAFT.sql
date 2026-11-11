@@ -208,3 +208,18 @@ drop trigger if exists td_payment_permission_v50 on public.td_payments;
 create trigger td_payment_permission_v50 before insert on public.td_payments
 for each row execute function public.td_guard_payment_permission_v50();
 -- Do not modify historical payment rows: the trigger only protects new inserts.
+
+-- Guard legacy permissive payment UPDATE policy: all matching RLS policies
+-- must also satisfy this restrictive permission gate.
+drop policy if exists td_payment_update_permission_v50 on public.td_payments;
+create policy td_payment_update_permission_v50 on public.td_payments
+as restrictive for update to authenticated
+using (public.td_has_permission_v50('finance_edit'))
+with check (public.td_has_permission_v50('finance_edit'));
+
+-- Prevent non-owners from editing the amount/status of settled pickup batches.
+drop policy if exists td_pickup_batch_update_permission_v50 on public.td_pickup_batches;
+create policy td_pickup_batch_update_permission_v50 on public.td_pickup_batches
+as restrictive for update to authenticated
+using (public.td_has_permission_v50('pickup_edit'))
+with check (public.td_has_permission_v50('pickup_edit'));
