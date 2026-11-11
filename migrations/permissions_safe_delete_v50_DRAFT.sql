@@ -119,7 +119,7 @@ grant execute on function public.td_set_staff_active_v32(uuid,boolean) to authen
 -- until an owner explicitly changes the permission switches.
 update public.td_members
 set permissions=coalesce(permissions,'{}'::jsonb) ||
- jsonb_build_object('customer_create',true,'customer_edit',true,'order_create',true,'parcel_create',true,'finance_create',true)
+ jsonb_build_object('customer_create',true,'customer_edit',true,'order_create',true,'parcel_create',true,'pickup_create',true,'finance_create',true)
 where role='staff' and active=true and deleted_at is null
   and permissions='{}'::jsonb;
 
@@ -189,12 +189,6 @@ drop trigger if exists td_pickup_receipt_permission_v50 on public.td_pickup_rece
 create trigger td_pickup_receipt_permission_v50 before insert on public.td_pickup_receipts_v32
 for each row execute function public.td_guard_pickup_receipt_permission_v50();
 
--- Preserve legacy pickup capability only for existing active staff with no explicit permission configuration.
--- Never overwrite a deliberate false or missing permission from an owner-managed profile.
-update public.td_members
-set permissions=permissions || jsonb_build_object('pickup_create',true)
-where role='staff' and active=true and deleted_at is null
- and permissions ? 'customer_create' and not permissions ? 'pickup_create';
 -- SECURITY DEFINER pickup functions may write payments bypassing table RLS;
 -- finance_create permission still requires explicit checks at their entry points.
 
