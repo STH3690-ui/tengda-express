@@ -131,3 +131,10 @@ test('pickup operational balance uses restricted RPC without raw receipt access'
  assert.match(sql,/as restrictive for select to authenticated using \(public\.td_has_permission_v50\('finance_view'\)\)/);
  assert.doesNotMatch(html,/db\.from\('td_pickup_balances_v32'\)/);
 });
+
+test('privileged pickup and repayment RPCs require granular permissions at entry',()=>{
+ assert.match(sql,/td_batch_pickup_v32\(uuid,jsonb,numeric,numeric,numeric,text,text,text,text\)/);
+ assert.match(sql,/td_pickup_repay_v32\(uuid,numeric,text,text\)/);
+ assert.match(sql,/td_has_permission_v50\(''pickup_create''\)/);
+ assert.match(sql,/td_has_permission_v50\(''finance_create''\)/);
+});
