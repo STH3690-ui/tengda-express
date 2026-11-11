@@ -251,7 +251,7 @@ function tdStaffAuditPage(){
 const TD_PERMISSION_GROUPS={"客户管理":[["customer_create","新增客户"],["customer_edit","修改客户"],["customer_delete","删除客户"],["customer_restore","恢复客户"]],"代买代付":[["order_create","录入订单"],["order_edit","修改订单"],["order_delete","删除商品"],["order_restore","恢复商品"]],"包裹管理":[["parcel_create","包裹入库"],["parcel_edit","修改包裹"],["parcel_delete","删除包裹"]],"取件管理":[["pickup_create","办理取件"],["pickup_edit","修改取件"],["pickup_reverse","撤销取件"]],"财务管理":[["finance_view","查看财务"],["finance_create","登记收付款"],["finance_edit","修改收付款"],["finance_export","导出报表"]],"记录管理":[["audit_view","查看操作记录"],["trash_view","查看回收站"],["record_restore","恢复记录"]]};
 function tdPermissionsPanel(id){
  const m=data.td_members.find(x=>x.id===id);
- if(!m||m.role==='owner')return notify('仅可设置普通员工权限',true);
+ if(!m||m.role==='owner'||m.deleted_at)return notify('仅可为未删除的普通员工设置权限',true);
  const current=m.permissions||{};
  const keys=Object.values(TD_PERMISSION_GROUPS).flat().map(x=>x[0]);
  const html=Object.entries(TD_PERMISSION_GROUPS).map(([title,items])=>'<fieldset style="border:1px solid #e4d7a7;border-radius:10px;margin:12px 0;padding:12px"><legend><b>'+title+'</b></legend><label><input type="checkbox" onchange="tdPermissionToggleGroup(this)" data-group="'+title+'"> 本类全选</label><div class="grid">'+items.map(([key,label])=>'<label style="min-height:0"><input type="checkbox" data-permission="'+key+'" '+(current[key]===true?'checked':'')+'> '+label+'</label>').join('')+'</div></fieldset>').join('');
