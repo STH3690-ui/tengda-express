@@ -74,3 +74,9 @@ test('pickup RPC writes are protected by database trigger guards',()=>{
  assert.ok(sql.includes("td_has_permission_v50('pickup_create')"));
  assert.ok(sql.includes("td_has_permission_v50('finance_create')"));
 });
+
+test('privileged RPC cannot bypass finance permission on payment ledger inserts',()=>{
+ assert.match(sql,/create or replace function public\.td_guard_payment_permission_v50\(\)/);
+ assert.match(sql,/create trigger td_payment_permission_v50 before insert on public\.td_payments/);
+ assert.match(sql,/if not public\.td_has_permission_v50\('finance_create'\)/);
+});
