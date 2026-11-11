@@ -49,7 +49,7 @@ end $$;
 revoke all on function public.td_owner_restore_staff_v50(uuid) from public,anon;
 grant execute on function public.td_owner_restore_staff_v50(uuid) to authenticated;
 -- Keep the old RPC signature for compatibility with existing clients.
-create or replace function public.td_staff_hide_order(p_order_id uuid,p_reason text default null)
+create or replace function public.td_staff_hide_order(p_order_id uuid,p_reason text)
 returns void language plpgsql security definer set search_path='' as $$
 declare r public.td_orders%rowtype; changed integer;
 begin
@@ -67,4 +67,4 @@ begin
 end $$;
 revoke all on function public.td_staff_hide_order(uuid,text) from public,anon;
 grant execute on function public.td_staff_hide_order(uuid,text) to authenticated;
--- Before release: migrate existing one-argument RPC callers and review old RPC grants.
+-- Old one-argument RPC remains for legacy clients. Before release, revoke its execution\n-- or replace it with a safe rejection wrapper, then verify all clients use the two-argument RPC.\n-- WARNING: Other CRUD endpoints still need permission enforcement before release.
