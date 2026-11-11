@@ -297,3 +297,17 @@ if position('if not public.td_is_active_v32() then raise exception' in src)=0 th
 src:=replace(src,'if not public.td_is_active_v32() then raise exception ''账号未批准或已停用'' using errcode=''42501'';end if;','if not public.td_has_permission_v50(''pickup_create'') then raise exception ''没有办理取件权限'' using errcode=''42501'';end if;');
 execute src;
 end $guard$;
+
+-- Enforce granular permissions before privileged pickup/repayment operations.
+do $guard$ declare src text;begin
+src:=pg_get_functiondef('public.td_batch_pickup_v32(uuid,jsonb,numeric,numeric,numeric,text,text,text,text)'::regprocedure);
+if position('td_has_permission_v50(''pickup_create'')' in src)=0 then
+src:=replace(src,'IF auth.uid() IS NULL','IF NOT public.td_has_permission_v50(''pickup_create'') THEN RAISE EXCEPTION ''没有办理取件权限'' USING errcode=''42501''; END IF;'||chr(10)||'  IF auth.uid() IS NULL');
+execute src;
+end if;
+src:=pg_get_functiondef('public.td_pickup_repay_v32(uuid,numeric,text,text)'::regprocedure);
+if position('td_has_permission_v50(''finance_create'')' in src)=0 then
+src:=replace(src,'IF NOT public.td_is_active() THEN','IF NOT public.td_has_permission_v50(''finance_create'') THEN RAISE EXCEPTION ''没有登记收款权限'' USING errcode=''42501''; END IF;'||chr(10)||'  IF NOT public.td_is_active() THEN');
+execute src;
+end if;
+end $guard$;
