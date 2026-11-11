@@ -18,7 +18,7 @@ function fixture(overrides = {}, state = {}) {
     async signInWithPassword(credentials){ calls.push({name:'password',credentials});return { data:{user:{id:ID},session:{access_token:'access',refresh_token:'refresh'}},error:state.badPassword?new Error('invalid'):null }; },
     admin:{ async createUser(args){ calls.push({name:'createUser',args}); return {data:{user:{id:ID}}}; }, async deleteUser(id){calls.push({name:'deleteUser',id});return {}; }, async updateUserById(id,args){calls.push({name:'updateUserById',id,args});return {error:state.banError}; } },
   };
-  const handler=createHandler({env:name=>({...settings,...overrides})[name],randomUUID:()=>ID,createClient:(_url,key)=>({auth,rpc,from:()=>({ ...query, select(columns){this.columns=columns;return this;},async maybeSingle(){return {data:key==='server-only-secret'&&this.columns==='role'?(state.target??{role:'staff',active:true}):member,error:state.memberError};} })})});
+  const handler=createHandler({env:name=>({...settings,...overrides})[name],randomUUID:()=>ID,createClient:(_url,key)=>({auth,rpc,from:()=>({ ...query, select(columns){this.columns=columns;return this;},async maybeSingle(){return {data:key==='server-only-secret'&&this.columns==='role,deleted_at'?(state.target??{role:'staff',active:true,deleted_at:null}):member,error:state.memberError};} })})});
   const request = async (body, {token='valid-token',origin='https://station.test',method='POST'}={}) => {
     const response = await handler(new Request('https://testref.supabase.co/functions/v1/staff-auth',{method,headers:{origin,...(token?{Authorization:'Bearer '+token}:{}),'Content-Type':'application/json'},...(method==='POST'?{body:typeof body==='string'?body:JSON.stringify(body)}:{})}));
     return {status:response.status,body:response.status===204?null:await response.json(),headers:response.headers};
@@ -55,3 +55,11 @@ test('Auth failure on approve never activates database membership',async()=>{con
 test('Auth failure on disable leaves database access denied and reports partial failure',async()=>{const f=fixture({},{banError:new Error('Auth')});const r=await f.request({action:'set-active',member_id:ID,active:false});assert.equal(r.status,503);assert.ok(r.body.message.includes('业务访问已停用'));assert.ok(f.calls.some(x=>x.name==='td_set_staff_active_v32'&&x.args.p_active===false));});
 
 test('production project binding accepts only the explicit production ref',async()=>{const f=fixture({TD_ENVIRONMENT:'tengda-v32-production',TD_PROJECT_REF:'yvsgawbbnyeyvynwghsc',SUPABASE_URL:'https://yvsgawbbnyeyvynwghsc.supabase.co'});assert.equal((await f.request(credentials)).status,200);const wrong=fixture({TD_ENVIRONMENT:'tengda-v32-production',TD_PROJECT_REF:'testref'});assert.equal((await wrong.request(credentials)).status,503);});
+
+test('deleted staff cannot be reapproved or unbanned',async()=>{
+ const f=fixture({},{target:{role:'staff',active:false,deleted_at:'2026-11-11T00:00:00Z'}});
+ const r=await f.request({action:'set-active',member_id:ID,active:true});
+ assert.equal(r.status,409);
+ assert.ok(!f.calls.some(x=>x.name==='updateUserById'));
+ assert.ok(!f.calls.some(x=>x.name==='td_set_staff_active_v32'));
+});

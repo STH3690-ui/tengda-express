@@ -98,8 +98,8 @@ export function createHandler({ createClient, env, randomUUID = () => crypto.ran
       if (body.action === 'set-active') {
         check(UUID.test(body.member_id || '') && typeof body.active === 'boolean', '账号参数错误');
         // Check the target before any Auth admin operation; owner accounts are protected.
-        const { data: target, error: targetError } = await admin.from('td_members').select('role').eq('id', body.member_id).maybeSingle();
-        check(!targetError && target && target.role !== 'owner', '管理员账号不可在这里修改', 409);
+        const { data: target, error: targetError } = await admin.from('td_members').select('role,deleted_at').eq('id', body.member_id).maybeSingle();
+        check(!targetError && target && target.role === 'staff' && !target.deleted_at, '员工已删除，请先恢复员工资料后再批准', 409);
         if (body.active) {
           // Unban first. A failed final transaction still leaves the account inactive in RLS.
           const { error: unbanError } = await admin.auth.admin.updateUserById(body.member_id, { ban_duration: 'none' });

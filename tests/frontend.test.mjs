@@ -7,7 +7,7 @@ const inline=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map
 function frontend() {
  const nodes={};
  const node=id=>nodes[id]??={innerHTML:'',textContent:'',value:'',classList:{add(){},remove(){}},addEventListener(){}};
- const context=vm.createContext({document:{getElementById:node,addEventListener(){}},setInterval(){},setTimeout(){},clearTimeout(){},AbortController,Response,window:{},console,confirm:()=>true});
+ const context=vm.createContext({document:{getElementById:node,addEventListener(){}},setInterval(){},setTimeout(){},clearTimeout(){},AbortController,Response,window:{},console,confirm:()=>true,prompt:()=> '录入错误'});
  vm.runInContext(inline,context);
  return {run:code=>vm.runInContext(code,context),nodes};
 }
