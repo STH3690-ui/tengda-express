@@ -59,3 +59,11 @@ test('both legacy membership guards deny soft-deleted accounts',()=>{
  assert.match(sql,/create or replace function public\.td_is_active\(\)/);
  assert.match(sql,/select public\.td_is_active_v32\(\)/);
 });
+
+test('deleted employees cannot open permissions editor',()=>{
+ assert.match(html,/m\.role==='owner'\|\|m\.deleted_at/);
+});
+test('direct-write RLS draft checks granular permissions for all core insert paths',()=>{
+ for(const permission of ['customer_create','customer_edit','order_create','parcel_create','finance_create'])
+  assert.ok(sql.includes("public.td_has_permission_v50('"+permission+"')"),permission);
+});
