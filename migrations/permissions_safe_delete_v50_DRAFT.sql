@@ -252,3 +252,15 @@ using (
 revoke all on function public.td_guard_payment_permission_v50() from public, anon, authenticated;
 revoke all on function public.td_guard_pickup_permission_v50() from public, anon, authenticated;
 revoke all on function public.td_guard_pickup_receipt_permission_v50() from public, anon, authenticated;
+
+
+-- The security-invoker balance view derives receivable and due from pickup batches.
+-- Without this gate, users denied receipt SELECT could still read all balances.
+drop policy if exists td_pickup_batch_select_permission_v50 on public.td_pickup_batches;
+create policy td_pickup_batch_select_permission_v50 on public.td_pickup_batches
+as restrictive for select to authenticated
+using (
+ public.td_has_permission_v50('pickup_create')
+ or public.td_has_permission_v50('pickup_edit')
+ or public.td_has_permission_v50('finance_view')
+);
