@@ -158,3 +158,41 @@ revoke all on function public.td_is_active_v32() from public,anon;
 revoke all on function public.td_is_active() from public,anon;
 grant execute on function public.td_is_active_v32() to authenticated;
 grant execute on function public.td_is_active() to authenticated;
+
+-- Protect pickup writes even inside SECURITY DEFINER RPCs (RLS is bypassed there).
+-- Existing v27/v32 batch and single pickup RPCs all write to these tables.
+create or replace function public.td_guard_pickup_permission_v50()
+returns trigger language plpgsql security definer set search_path='' as $$
+begin
+ if not public.td_has_permission_v50('pickup_create') then
+  raise exception '没有办理取件权限' using errcode='42501';
+ end if;
+ return new;
+end $$;
+drop trigger if exists td_pickup_permission_v50 on public.td_pickup_batches;
+create trigger td_pickup_permission_v50 before insert on public.td_pickup_batches
+for each row execute function public.td_guard_pickup_permission_v50();
+drop trigger if exists td_pickup_permission_v50 on public.td_pickups;
+create trigger td_pickup_permission_v50 before insert on public.td_pickups
+for each row execute function public.td_guard_pickup_permission_v50();
+
+-- Repay RPC writes receipt rows. Require financial create permission at the ledger edge.
+create or replace function public.td_guard_pickup_receipt_permission_v50()
+returns trigger language plpgsql security definer set search_path='' as $$
+begin
+ if not public.td_has_permission_v50('finance_create') then
+  raise exception '没有登记取件收款权限' using errcode='42501';
+ end if;
+ return new;
+end $$;
+drop trigger if exists td_pickup_receipt_permission_v50 on public.td_pickup_receipts_v32;
+create trigger td_pickup_receipt_permission_v50 before insert on public.td_pickup_receipts_v32
+for each row execute function public.td_guard_pickup_receipt_permission_v50();
+
+-- Preserve legacy pickup capability for existing active staff on first migration.
+update public.td_members
+set permissions=permissions || jsonb_build_object('pickup_create',true)
+where role='staff' and active=true and deleted_at is null
+ and not permissions ? 'pickup_create';
+-- SECURITY DEFINER pickup functions may write payments bypassing table RLS;
+-- finance_create permission still requires explicit checks at their entry points.
