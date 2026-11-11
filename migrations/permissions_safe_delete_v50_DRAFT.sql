@@ -142,3 +142,19 @@ create policy td_business_insert on public.td_payments for insert to authenticat
 with check (public.td_has_permission_v50('finance_create') and created_by=(select auth.uid()));
 -- DRAFT: other RPCs, pickup/record mutations, and financial/reporting paths
 -- must be audited before release; this is not a complete authorization migration.
+
+-- Both legacy active-account helpers are used by existing RLS, triggers and pickup RPCs.
+-- Make soft-deletion a hard deny for either helper, including stale JWT sessions.
+create or replace function public.td_is_active_v32()
+returns boolean language sql stable security definer set search_path='' as $$
+ select exists(select 1 from public.td_members
+ where id=(select auth.uid()) and active=true and deleted_at is null);
+$$;
+create or replace function public.td_is_active()
+returns boolean language sql stable security definer set search_path='' as $$
+ select public.td_is_active_v32();
+$$;
+revoke all on function public.td_is_active_v32() from public,anon;
+revoke all on function public.td_is_active() from public,anon;
+grant execute on function public.td_is_active_v32() to authenticated;
+grant execute on function public.td_is_active() to authenticated;
