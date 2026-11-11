@@ -196,3 +196,18 @@ where role='staff' and active=true and deleted_at is null
  and not permissions ? 'pickup_create';
 -- SECURITY DEFINER pickup functions may write payments bypassing table RLS;
 -- finance_create permission still requires explicit checks at their entry points.
+
+-- SECURITY DEFINER pickup and legacy payment RPCs can bypass INSERT RLS.
+-- Enforce finance permission on the actual ledger table, not only the client.
+create or replace function public.td_guard_payment_permission_v50()
+returns trigger language plpgsql security definer set search_path='' as $$
+begin
+ if not public.td_has_permission_v50('finance_create') then
+  raise exception '没有登记收付款权限' using errcode='42501';
+ end if;
+ return new;
+end $$;
+drop trigger if exists td_payment_permission_v50 on public.td_payments;
+create trigger td_payment_permission_v50 before insert on public.td_payments
+for each row execute function public.td_guard_payment_permission_v50();
+-- Do not modify historical payment rows: the trigger only protects new inserts.
