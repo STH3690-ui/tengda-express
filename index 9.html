@@ -254,7 +254,7 @@ async function refresh(){
     Object.assign(data,next);
     archivedCustomers=new Set((ar.data||[]).map(x=>x.customer_id));
     hiddenOrderIds=new Set((hr.data||[]).map(x=>x.order_id));
-  const phr=await db.from('td_parcel_hidden_v51').select('parcel_id');if(phr.error)throw new Error('包裹删除状态: '+phr.error.message);hiddenParcelIds=new Set((phr.data||[]).map(x=>x.parcel_id));data.td_parcels=data.td_parcels.filter(x=>!hiddenParcelIds.has(x.id));
+  let phr=null;try{phr=await db.from('td_parcel_hidden_v51').select('parcel_id')}catch(e){console.warn('Parcel deletion status temporarily unavailable',e)}if(phr&&!phr.error){hiddenParcelIds=new Set((phr.data||[]).map(x=>x.parcel_id));data.td_parcels=data.td_parcels.filter(x=>!hiddenParcelIds.has(x.id))}else{console.warn('Parcel deletion status unavailable; business data will still load',phr&&phr.error);hiddenParcelIds=new Set()}
     render();
   }catch(e){
     const message='数据读取失败：'+e.message;
