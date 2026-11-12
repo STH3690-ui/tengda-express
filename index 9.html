@@ -196,7 +196,7 @@ button>.td-brand-vector{margin-right:6px}
 <section id="td-register" class="panel hidden"><h2>注册账号</h2><p class="muted">申请提交后等待管理员审核，通过后才可登录。</p><form id="tdRegisterForm"><div class="grid"><div><label>用户名 *</label><input name="username" required pattern="[A-Za-z0-9_]{3,30}" minlength="3" maxlength="30" autocomplete="username" autocapitalize="none"></div><div><label>姓名 *</label><input name="display_name" required maxlength="60"></div><div><label>密码（至少12位）*</label><input name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></div><div><label>确认密码 *</label><input name="confirm_password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></div><div><label>联系电话（可选）</label><input name="contact_phone" maxlength="30"></div><div><label>邮箱（可选）</label><input name="email" type="email" maxlength="254"></div></div><p><button class="primary">提交注册申请</button> <button type="button" class="secondary" onclick="tdToggleRegistration()">返回登录</button></p></form></section>
 <div id="app" class="hidden"><nav class="nav" id="nav"></nav><section class="panel" id="page"></section><section class="panel"><button class="secondary" onclick="logout()">退出登录</button> <button class="secondary" onclick="refresh()">刷新云数据</button></section></div><div id="msg" class="msg hidden"></div><footer>腾达快递站 · 客户管理 V3.2 · 正式环境 · V3.2</footer></div>
 <script src="./vendor/supabase-2.49.8.min.js"></script><script src="./td-cleanup-ui.js"></script><script>
-let hiddenOrderIds=new Set(),hiddenParcelIds=new Set();let db=null,user=null,role='',data={td_customers:[],td_orders:[],td_parcels:[],td_pickups:[],td_payments:[],td_members:[]},page='dashboard',queryCustomer='',queryTerm='',queryStatus='pending',signature='',deletionLogs=[],deletionError='',pickupCustomer='',pickupSelected={},pickupBatches=[],archivedCustomers=new Set(),editingCustomerId=null ;
+let hiddenOrderIds=new Set(),hiddenParcelIds=new Set(),hiddenAuditIds=new Set();let db=null,user=null,role='',data={td_customers:[],td_orders:[],td_parcels:[],td_pickups:[],td_payments:[],td_members:[]},page='dashboard',queryCustomer='',queryTerm='',queryStatus='pending',signature='',deletionLogs=[],deletionError='',pickupCustomer='',pickupSelected={},pickupBatches=[],archivedCustomers=new Set(),editingCustomerId=null ;
 const $=id=>document.getElementById(id),esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),money=x=>Number(x||0).toLocaleString('en-US',{maximumFractionDigits:2}),date=x=>x?new Date(x).toLocaleString('zh-CN'):'';
 const name=id=>data.td_customers.find(x=>x.id===id)?.name||'未知客户';const opt=(items,fn)=>items.filter(x=>!x.deleted_at&&!archivedCustomers.has(x.id)).map(x=>`<option value="${esc(x.id)}">${esc(fn(x))}</option>`).join('');
 function notify(s,err=false){$('msg').textContent=s;$('msg').classList.remove('hidden');$('msg').style.background=err?'#ffe8e8':'#fff4cf';window.scrollTo({top:0,behavior:'smooth'});}
@@ -255,6 +255,7 @@ async function refresh(){
     archivedCustomers=new Set((ar.data||[]).map(x=>x.customer_id));
     hiddenOrderIds=new Set((hr.data||[]).map(x=>x.order_id));
   let phr=null;try{phr=await db.from('td_parcel_hidden_v51').select('parcel_id')}catch(e){console.warn('Parcel deletion status temporarily unavailable',e)}if(phr&&!phr.error){hiddenParcelIds=new Set((phr.data||[]).map(x=>x.parcel_id));data.td_parcels=data.td_parcels.filter(x=>!hiddenParcelIds.has(x.id))}else{console.warn('Parcel deletion status unavailable; business data will still load',phr&&phr.error);hiddenParcelIds=new Set()}
+    const ah=await db.from('td_audit_hidden_v52').select('source_table,source_id');if(ah.error)throw new Error('员工明细隐藏状态: '+ah.error.message);hiddenAuditIds=new Set((ah.data||[]).map(x=>x.source_table+':'+x.source_id));
     render();
   }catch(e){
     const message='数据读取失败：'+e.message;
@@ -414,9 +415,9 @@ function tdAuditRows(){
  ['td_pickups','取件','picked_at',x=>x.receiver_name||'',()=>null],
  ['td_payments','收付款','created_at',x=>x.notes||x.method||'',x=>x.amount||0]];
  return kinds.flatMap(([table,kind,date,detail,amount])=>(data[table]||[]).map(x=>({
-  id:x.id,employee:x.created_by||'',kind,at:x[date]||'',detail:String(detail(x)),
+  id:x.id,table,employee:x.created_by||'',kind,at:x[date]||'',detail:String(detail(x)),
   amount:amount(x),state:table==='td_orders'&&hiddenOrderIds.has(x.id)?'已隐藏':table==='td_customers'&&x.deleted_at?'已删除':'正常'
- }))).filter(x=>(!tdAuditEmployee||x.employee===tdAuditEmployee)&&(!tdAuditKind||x.kind===tdAuditKind)&&(!tdAuditFrom||x.at.slice(0,10)>=tdAuditFrom)&&(!tdAuditTo||x.at.slice(0,10)<=tdAuditTo)).sort((a,b)=>b.at.localeCompare(a.at));
+ }))).filter(x=>!hiddenAuditIds.has(x.table+':'+x.id)).filter(x=>(!tdAuditEmployee||x.employee===tdAuditEmployee)&&(!tdAuditKind||x.kind===tdAuditKind)&&(!tdAuditFrom||x.at.slice(0,10)>=tdAuditFrom)&&(!tdAuditTo||x.at.slice(0,10)<=tdAuditTo)).sort((a,b)=>b.at.localeCompare(a.at));
 }
 function tdAuditSetFilter(field,value){if(role!=='owner')return;if(field==='employee')tdAuditEmployee=value;if(field==='kind')tdAuditKind=value;if(field==='from')tdAuditFrom=value;if(field==='to')tdAuditTo=value;tdAuditRenderResults();}
 function tdAuditRenderResults(){
@@ -435,10 +436,11 @@ function tdAuditRenderResults(){
  stat('取件记录',byKind('取件').length+' 笔')+'</div>';
  el.innerHTML=summary+'<p class="muted">按当前员工、类型和日期筛选汇总；包含已隐藏订单及已删除客户。订单金额与收付款金额分别统计，不相加，也不等于实际利润。</p>'+
  '<p class="muted">共 '+rows.length+' 条记录（按创建人统计，不代表后续修改人）。</p>'+
- '<div class="scroll"><table><tr><th>录入员工</th><th>类型</th><th>时间</th><th>内容</th><th>金额 MMK</th><th>状态</th></tr>'+
- rows.slice(0,1000).map(x=>'<tr><td>'+esc(employee(x.employee))+'</td><td>'+esc(x.kind)+'</td><td>'+esc(x.at?new Date(x.at).toLocaleString('zh-CN',{timeZone:'Asia/Yangon',hour12:false}):'—')+'</td><td>'+esc(x.detail)+'</td><td>'+esc(x.amount===null?'—':Number(x.amount).toLocaleString('en-US'))+'</td><td>'+esc(x.state)+'</td></tr>').join('')+'</table></div>'+
+ '<div class="scroll"><table><tr><th>录入员工</th><th>类型</th><th>时间</th><th>内容</th><th>金额 MMK</th><th>状态</th><th>操作</th></tr>'+
+ rows.slice(0,1000).map(x=>'<tr><td>'+esc(employee(x.employee))+'</td><td>'+esc(x.kind)+'</td><td>'+esc(x.at?new Date(x.at).toLocaleString('zh-CN',{timeZone:'Asia/Yangon',hour12:false}):'—')+'</td><td>'+esc(x.detail)+'</td><td>'+esc(x.amount===null?'—':Number(x.amount).toLocaleString('en-US'))+'</td><td>'+esc(x.state)+'</td><td><button class="secondary" onclick="tdHideAuditEntry(\''+x.table+'\',\''+x.id+'\')">删除</button></td></tr>').join('')+'</table></div>'+
  (rows.length>1000?'<p class="muted">仅展示前1000条，请缩小筛选范围。</p>':'');
 }
+async function tdHideAuditEntry(table,id){if(role!=='owner')return notify('仅管理员可操作',true);const reason=prompt('从员工录入明细移除此条记录？原始业务和财务不删除。\n请输入原因（至少3字）');if(reason===null)return;if(reason.trim().length<3)return notify('原因至少3字',true);if(!confirm('确认移除员工录入明细？该记录将不再计入本页统计，原始业务与财务保留。'))return;try{const {error}=await db.rpc('td_hide_audit_v52',{p_source_table:table,p_source_id:id,p_reason:reason.trim()});if(error)throw error;await refresh();notify('已从员工录入明细移除')}catch(e){notify('移除失败：'+(e?.message||e?.details||JSON.stringify(e)),true)}}
 function tdStaffAuditPage(){
  if(role!=='owner')return '<h2>无权限</h2>';
  const opt=(value,label,selected)=>'<option value="'+esc(value)+'"'+(selected===value?' selected':'')+'>'+esc(label)+'</option>';
