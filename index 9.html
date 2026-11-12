@@ -432,6 +432,20 @@ function tdAuditRows(){
   amount:amount(x),state:table==='td_orders'&&hiddenOrderIds.has(x.id)?'已隐藏':table==='td_customers'&&x.deleted_at?'已删除':'正常'
  }))).filter(x=>!hiddenAuditIds.has(x.table+':'+x.id)).filter(x=>(!tdAuditEmployee||x.employee===tdAuditEmployee)&&(!tdAuditKind||x.kind===tdAuditKind)&&(!tdAuditFrom||x.at.slice(0,10)>=tdAuditFrom)&&(!tdAuditTo||x.at.slice(0,10)<=tdAuditTo)).sort((a,b)=>b.at.localeCompare(a.at));
 }
+let tdAuditSelected=new Set();
+function tdAuditToggle(key,checked){if(checked)tdAuditSelected.add(key);else tdAuditSelected.delete(key);tdAuditRenderResults()}
+function tdAuditSelectAll(checked){tdAuditSelected=new Set(checked?tdAuditRows().slice(0,1000).map(x=>x.table+':'+x.id):[]);tdAuditRenderResults()}
+async function tdAuditBulkDelete(){
+ if(role!=='owner')return notify('仅管理员可删除',true);
+ const rows=tdAuditRows().filter(x=>tdAuditSelected.has(x.table+':'+x.id));if(!rows.length)return notify('请先勾选记录',true);
+ const amount=rows.reduce((n,x)=>n+Number(x.amount||0),0);
+ const reason=prompt('将从员工录入统计移除 '+rows.length+' 条记录，涉及金额 '+money(amount)+' MMK。原始业务和财务不会删除。\\n请输入原因（至少3字）');
+ if(reason===null)return;if(reason.trim().length<3)return notify('原因至少3字',true);
+ if(!confirm('确认批量移除 '+rows.length+' 条员工录入明细？原始业务和财务仍然保留。'))return;
+ let done=0,failed=[];
+ for(const x of rows){try{const {error}=await db.rpc('td_hide_audit_v52',{p_source_table:x.table,p_source_id:x.id,p_reason:reason.trim()});if(error)throw error;done++}catch(e){failed.push(x.kind+':'+(e?.message||JSON.stringify(e)))}}
+ tdAuditSelected.clear();await refresh();notify('已移除 '+done+' 条'+(failed.length?'，失败 '+failed.length+' 条：'+failed[0]:''),!!failed.length)
+}
 function tdAuditSetFilter(field,value){if(role!=='owner')return;if(field==='employee')tdAuditEmployee=value;if(field==='kind')tdAuditKind=value;if(field==='from')tdAuditFrom=value;if(field==='to')tdAuditTo=value;tdAuditRenderResults();}
 function tdAuditRenderResults(){
  if(role!=='owner')return;
@@ -449,8 +463,9 @@ function tdAuditRenderResults(){
  stat('取件记录',byKind('取件').length+' 笔')+'</div>';
  el.innerHTML=summary+'<p class="muted">按当前员工、类型和日期筛选汇总；包含已隐藏订单及已删除客户。订单金额与收付款金额分别统计，不相加，也不等于实际利润。</p>'+
  '<p class="muted">共 '+rows.length+' 条记录（按创建人统计，不代表后续修改人）。</p>'+
- '<div class="scroll"><table><tr><th>录入员工</th><th>类型</th><th>时间</th><th>内容</th><th>金额 MMK</th><th>状态</th><th>操作</th></tr>'+
- rows.slice(0,1000).map(x=>'<tr><td>'+esc(employee(x.employee))+'</td><td>'+esc(x.kind)+'</td><td>'+esc(x.at?new Date(x.at).toLocaleString('zh-CN',{timeZone:'Asia/Yangon',hour12:false}):'—')+'</td><td>'+esc(x.detail)+'</td><td>'+esc(x.amount===null?'—':Number(x.amount).toLocaleString('en-US'))+'</td><td>'+esc(x.state)+'</td><td><button class="secondary" onclick="tdHideAuditEntry(\''+x.table+'\',\''+x.id+'\')">删除</button></td></tr>').join('')+'</table></div>'+
+ '<p><button class="secondary" onclick="tdAuditSelectAll(true)">全选当前筛选</button> <button class="secondary" onclick="tdAuditSelectAll(false)">取消全选</button> <button class="secondary danger" onclick="tdAuditBulkDelete()">批量删除已选（'+rows.filter(x=>tdAuditSelected.has(x.table+':'+x.id)).length+'）</button></p>'+
+ '<div class="scroll"><table><tr><th>选择</th><th>录入员工</th><th>类型</th><th>时间</th><th>内容</th><th>金额 MMK</th><th>状态</th><th>操作</th></tr>'+
+ rows.slice(0,1000).map(x=>'<tr><td><input type="checkbox" '+(tdAuditSelected.has(x.table+':'+x.id)?'checked':'')+' onchange="tdAuditToggle(\\\''+x.table+':'+x.id+'\\\',this.checked)"></td><td>'+esc(employee(x.employee))+'</td><td>'+esc(x.kind)+'</td><td>'+esc(x.at?new Date(x.at).toLocaleString('zh-CN',{timeZone:'Asia/Yangon',hour12:false}):'—')+'</td><td>'+esc(x.detail)+'</td><td>'+esc(x.amount===null?'—':Number(x.amount).toLocaleString('en-US'))+'</td><td>'+esc(x.state)+'</td><td><button class="secondary" onclick="tdHideAuditEntry(\''+x.table+'\',\''+x.id+'\')">删除</button></td></tr>').join('')+'</table></div>'+
  (rows.length>1000?'<p class="muted">仅展示前1000条，请缩小筛选范围。</p>':'');
 }
 async function tdHideAuditEntry(table,id){if(role!=='owner')return notify('仅管理员可操作',true);const reason=prompt('从员工录入明细移除此条记录？原始业务和财务不删除。\n请输入原因（至少3字）');if(reason===null)return;if(reason.trim().length<3)return notify('原因至少3字',true);if(!confirm('确认移除员工录入明细？该记录将不再计入本页统计，原始业务与财务保留。'))return;try{const {error}=await db.rpc('td_hide_audit_v52',{p_source_table:table,p_source_id:id,p_reason:reason.trim()});if(error)throw error;await refresh();notify('已从员工录入明细移除')}catch(e){notify('移除失败：'+(e?.message||e?.details||JSON.stringify(e)),true)}}
