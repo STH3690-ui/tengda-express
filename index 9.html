@@ -374,10 +374,10 @@ function parcels(){return `<h2>包裹到站 / 入库</h2><form onsubmit="submitR
 async function tdDeleteParcel(id){
  const x=data.td_parcels.find(p=>p.id===id);if(!x)return notify('包裹不存在，请刷新',true);
  const linked=Number(x.remaining)<Number(x.pieces);
- const reason=prompt('删除包裹：'+(x.tracking_no||x.description||'未命名')+'\n请输入删除原因（至少3字）。\n原取件与收款财务记录会保留。');
+ const reason=prompt('删除包裹：'+(x.tracking_no||x.description||'未命名')+'\n请输入删除原因（至少3字）。\n原始收款历史保留；若整批包裹都删除，该批金额不再计入当前总览。');
  if(reason===null)return;if(reason.trim().length<3)return notify('删除原因至少3字',true);
- if(!confirm('再次确认：从业务包裹清单及到站统计移除该包裹？'+(linked?'\n该包裹已有取件，原取件与收款财务记录将保留。':'')))return;
- try{const {error}=await db.rpc('td_hide_parcel_v51',{p_parcel_id:id,p_reason:reason.trim()});if(error)throw error;await refresh();notify('包裹已移除，历史收款记录保留')}catch(e){notify('删除失败：'+(e?.message||e?.details||e?.hint||e?.code||(typeof e==='object'?JSON.stringify(e):String(e))),true)}
+ if(!confirm('再次确认：从业务包裹清单及到站统计移除该包裹？'+(linked?'\n该包裹已有取件。整批包裹都删除后，该批运费将从当前总览排除；历史收款保留。':'')))return;
+ try{const {error}=await db.rpc('td_hide_parcel_v51',{p_parcel_id:id,p_reason:reason.trim()});if(error)throw error;await refresh();notify('包裹已移除；整批包裹均删除时，相关金额不再计入当前总览，历史收款保留')}catch(e){notify('删除失败：'+(e?.message||e?.details||e?.hint||e?.code||(typeof e==='object'?JSON.stringify(e):String(e))),true)}
 }
 function fmtArrived(v){if(!v)return '未记录';const d=new Date(v);return Number.isNaN(d.getTime())?esc(String(v)):esc(d.toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}));}
 function listParcels(ps){return `<h2>包裹清单</h2><div class="scroll"><table><tr><th>客户</th><th>运单/内容</th><th>入库时间</th><th>件数</th><th>剩余</th><th>重量</th><th>运费参考</th><th>照片</th><th>操作</th></tr>${ps.map(x=>`<tr><td>${esc(name(x.customer_id))}</td><td>${esc(x.tracking_no)}<br>${esc(x.description)}</td><td>${fmtArrived(x.arrived_at)}</td><td>${x.pieces}</td><td><b>${x.remaining}</b></td><td>${x.weight_kg} kg</td><td>${money(Number(x.weight_kg)*Number(x.fee_per_kg)+Number(x.pieces)*Number(x.fee_per_piece))}</td><td><button class="secondary" onclick="openPhotos('${x.id}')">查看/添加照片</button></td><td><button type="button" class="secondary" onclick="tdDeleteParcel('${x.id}')">删除</button></td></tr>`).join('')}</table></div><div id="photoArea"></div>`}
@@ -567,7 +567,7 @@ async function tdLoadFinance(){
    metric('累计已收（当前余额口径）',money(sum('paid_mmk'))+' MMK')+
    metric('剩余欠款（当前余额口径）',money(sum('due_mmk'))+' MMK')+
    metric('快递净利润','待录入成本')+
-   '</div><p class="muted">以上三项为当前累计余额，不受日期筛选影响，不能作为指定期间的收款金额；分页读取最多50000笔结算。快递净利润需先记录运输成本。</p>'+
+   '</div><p class="muted">以上三项为未整批删除包裹的当前累计余额，不受日期筛选影响，不能作为指定期间的收款金额；分页读取最多50000笔结算。快递净利润需先记录运输成本。</p>'+
    '<h2>代买 / 代付 · 独立参考收益</h2><div class="metrics">'+
    metric('代买服务费合计',money(fees)+' MMK')+
    metric('代付正向汇差参考',money(spread)+' MMK')+
