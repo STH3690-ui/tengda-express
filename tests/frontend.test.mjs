@@ -45,13 +45,12 @@ test('employee audit is owner-only and visible in owner navigation',()=>{
  const f=frontend();f.run("role='staff'");assert.match(f.run('tdStaffAuditPage()'),/无权限/);assert.ok(!f.run("tabs.filter(x=>!['staff','staffAudit','deletions','cleanup'].includes(x[0])||role==='owner').some(x=>x[0]==='staffAudit')"));
  f.run("role='owner'");assert.ok(f.run("tabs.some(x=>x[0]==='staffAudit')"));assert.match(f.run('tdStaffAuditPage()'),/员工录入明细/);
 });
-test('employee audit attributes entries to creator, includes hidden and deleted records',()=>{
+test('employee audit attributes entries to creator and excludes hidden and deleted records',()=>{
  const f=frontend();f.run("role='owner';data.td_members=[{id:'a',display_name:'小杨'},{id:'b',display_name:'杨'}];data.td_orders=[{id:'o1',created_by:'a',item_name:'电视',total_price:69000,created_at:'2026-10-19T13:46:30Z'},{id:'o2',created_by:'b',item_name:'JBL',total_price:100,created_at:'2026-10-20T00:00:00Z'}];data.td_customers=[{id:'c1',created_by:'a',name:'已删除客户',deleted_at:'2026-10-21',created_at:'2026-10-19T00:00:00Z'}];hiddenOrderIds=new Set(['o1'])");
- assert.equal(f.run('tdAuditRows().length'),3);
- assert.equal(f.run("tdAuditRows().find(x=>x.id==='o1').state"),'已隐藏');
- assert.equal(f.run("tdAuditRows().find(x=>x.id==='c1').state"),'已删除');
- f.run("tdAuditEmployee='a'");assert.equal(f.run('tdAuditRows().length'),2);
- f.run("tdAuditKind='订单'");assert.equal(f.run('tdAuditRows().length'),1);
+ assert.equal(f.run('tdAuditRows().length'),1);
+ assert.equal(f.run("tdAuditRows().some(x=>x.id==='o1'||x.id==='c1')"),false);
+ f.run("tdAuditEmployee='a'");assert.equal(f.run('tdAuditRows().length'),0);
+ f.run("tdAuditKind='订单'");assert.equal(f.run('tdAuditRows().length'),0);
  f.run("tdAuditFrom='2026-10-20'");assert.equal(f.run('tdAuditRows().length'),0);
 });
 test('employee audit escapes untrusted details before rendering',()=>{
