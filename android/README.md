@@ -65,5 +65,5 @@ bash android/configure-signing-secrets.sh /path/tengda-release.p12 /path/keystor
 - 签名 APK/AAB 构建成功；apksigner APK校验、jarsigner AAB校验及两者证书/DAL匹配通过。
 - Node 测试98/98通过，语法检查、生产静态构建通过。
 - Chromium测试6种手机/平板横竖屏尺寸 × 9个主要页面，共54个组合，无整页横向溢出或脚本错误；测试后再次复核安全区域CSS。业务接口均模拟，不操作正式记录。
-- 已尝试官方Android模拟器/ADB安装验证，当前环境无连接真机、无KVM；软件模拟器受环境磁盘/运行条件限制，未完成设备内安装和启动验证。不能把构建签名校验当作真机测试。首台真机应验证安装、TWA无地址栏、登录、拍照/相册上传、下载/PDF、旋转和返回键。
+- 已在无KVM的软件 Android 10（API29）模拟器中通过 ADB 实际安装签名APK，系统返回 Success。模拟器使用稀疏测试磁盘，未接入真实账号或业务数据。该AOSP镜像没有兼容TWA的Chrome浏览器，因此仍未完成完整TWA页面启动/无地址栏验证，也未做真机测试。首台真机应验证安装、TWA无地址栏、登录、拍照/相册上传、下载/PDF、旋转和返回键。
 - GitHub Secrets 403：需要仓库所有者按上述步骤设置。Google Play未发布；AAB为已签名的上传包，Play Console 账号/商店审核属于后续流程。
