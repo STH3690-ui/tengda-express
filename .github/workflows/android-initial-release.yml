@@ -1,0 +1,36 @@
+name: Publish first signed Android release
+on:
+  push:
+    branches: [release/android-3.2.0-artifacts]
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'build-tools;36.0.0'
+      - name: Verify original signed artifacts and live website identity
+        run: |
+          set -euo pipefail
+          export PATH="$ANDROID_HOME/build-tools/36.0.0:$PATH"
+          cd release-artifacts
+          sha256sum -c SHA256SUMS.txt
+          cd ..
+          python3 android/verify-release.py release-artifacts/tengda-express-3.2.0.apk release-artifacts/tengda-express-3.2.0.aab
+          curl -fsS --retry 5 --retry-all-errors --retry-delay 5 https://tengda-express-station.netlify.app/.well-known/assetlinks.json -o /tmp/live-dal.json
+          python3 -c "import json; c=json.load(open('android/release-config.json')); d=json.load(open('/tmp/live-dal.json')); assert any(x['target']['package_name']==c['packageId'] and c['sha256Fingerprint'] in x['target']['sha256_cert_fingerprints'] for x in d)"
+      - name: Upload and publish signed release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release upload v3.2.0-android release-artifacts/tengda-express-3.2.0.apk release-artifacts/tengda-express-3.2.0.aab release-artifacts/SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+          gh release edit v3.2.0-android --draft=false --target 9f98595c53bfcfb26cbe720ab1cc6c9b770dfd18 --repo "$GITHUB_REPOSITORY"
