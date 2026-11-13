@@ -29,7 +29,7 @@ test('deleted staff cannot be approved by old server RPC or UI',()=>{
  assert.match(sql,/create or replace function public\.td_owner_set_member_active_v30\(p_active boolean,p_member uuid\)/);
  assert.match(sql,/where id=p_member and role='staff' and deleted_at is null/);
  assert.match(html,/x\.deleted_at\?'已删除'/);
- assert.match(html,/x\.deleted_at\?'':`<button class="secondary" onclick="tdSetStaffActive/);
+ assert.match(html,/x\.deleted_at\?'':`<button class="secondary[^"]*" onclick="tdSetStaffActive/);
 });
 test('new RPC endpoints are explicitly allowed by network proxy',()=>{
  const proxy=readFileSync('netlify/lib/supabase-proxy.mjs','utf8');
