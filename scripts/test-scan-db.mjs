@@ -6,6 +6,7 @@ const pg=new EmbeddedPostgres({databaseDir:join(directory,'data'),user:'postgres
 let c;
 try{
  await pg.initialise();await pg.start();c=pg.getPgClient();await c.connect();
+ await c.query("set statement_timeout='30s';set lock_timeout='5s';set idle_in_transaction_session_timeout='60s'");
  await c.query(`create role anon;create role authenticated;create role service_role;create schema auth;create schema storage;
  create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}',created_at timestamptz default now());
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
@@ -14,8 +15,29 @@ try{
  create table storage.buckets(id text primary key,name text,public boolean);
  create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);alter table storage.objects enable row level security;`);
  for(const file of ['docs/PRODUCTION_MIGRATION.sql','migrations/permissions_safe_delete_v50_DRAFT.sql','sql/staff-entry-delete-v54.sql','sql/deletion-history-relations-v55.sql','sql/history-batch-delete-v56.sql','supabase/migrations/20261113131906_smart_scan_pos_v57.sql']){
-  try{if(file.includes('smart_scan_pos'))await c.query(`create table public.td_parcel_hidden_v51(parcel_id uuid primary key,hidden_by uuid,hidden_at timestamptz default now(),reason text);create table public.td_pickup_hidden_v53(batch_id uuid primary key,hidden_by uuid,hidden_at timestamptz default now(),reason text);`);let sql=await readFile(file,'utf8');if(file==='docs/PRODUCTION_MIGRATION.sql'){const keys=sql.split('\n').filter(l=>l.includes('ADD CONSTRAINT')&&l.includes('PRIMARY KEY')).join('\n');const pos=sql.indexOf('DO $$ BEGIN IF NOT EXISTS(select 1 from pg_constraint');sql=sql.slice(0,pos)+keys+'\n'+sql.slice(pos)}await c.query(sql);}catch(e){console.error('Migration failed:',file,e.message);throw e;}
+  try{if(file.includes('smart_scan_pos'))await c.query(`create table public.td_parcel_hidden_v51(parcel_id uuid primary key,hidden_by uuid,hidden_at timestamptz default now(),reason text);create table public.td_pickup_hidden_v53(batch_id uuid primary key,hidden_by uuid,hidden_at timestamptz default now(),reason text);`);let sql=await readFile(file,'utf8');if(file==='docs/PRODUCTION_MIGRATION.sql'){const keys=sql.split('\n').filter(l=>l.includes('ADD CONSTRAINT')&&l.includes('PRIMARY KEY')).join('\n');const pos=sql.indexOf('DO $$ BEGIN IF NOT EXISTS(select 1 from pg_constraint');sql=sql.slice(0,pos)+keys+'\n'+sql.slice(pos)}
+   if(file.includes('smart_scan_pos')){
+    const oldLedger=(await c.query("select md5(pg_get_functiondef('public.td_batch_pickup_v32(uuid,jsonb,numeric,numeric,numeric,text,text,text,text)'::regprocedure)) hash")).rows[0].hash;
+    const schemaAcl=(await c.query("select nspacl::text acl from pg_namespace where nspname='td_private'")).rows[0].acl;
+    // Fail after every V57 DDL/GRANT statement but before COMMIT. Nothing may survive.
+    const injected=sql.replace("notify pgrst,'reload schema';",()=>"do $$begin raise exception 'injected V57 install failure';end$$;");
+    assert.notEqual(injected,sql);await assert.rejects(c.query(injected),/injected V57 install failure/);await c.query('rollback');
+    const objects=(await c.query("select (select count(*) from pg_proc where proname like '%v57') functions,(select count(*) from pg_class where relname like '%v57') relations,(select count(*) from pg_trigger where tgname like '%v57') triggers")).rows[0];
+    assert.deepEqual(objects,{functions:'0',relations:'0',triggers:'0'});
+    assert.equal((await c.query("select md5(pg_get_functiondef('public.td_batch_pickup_v32(uuid,jsonb,numeric,numeric,numeric,text,text,text,text)'::regprocedure)) hash")).rows[0].hash,oldLedger);
+    assert.equal((await c.query("select nspacl::text acl from pg_namespace where nspname='td_private'")).rows[0].acl,schemaAcl);
+    console.log('PASS V57 installation failure: all new objects and grant changes rolled back; old ledger unchanged.');
+   }
+   await c.query(sql);
+  }catch(e){console.error('Migration failed:',file,e.message);throw e;}
  }
+ // Reproduce the legacy grants, apply the narrow repair twice, then run all business checks.
+ await c.query('grant all on public.td_parcel_hidden_v51,public.td_pickup_hidden_v53 to authenticated');
+ const fix=await readFile('sql/v57-legacy-truncate-hardening-REVIEW.sql','utf8');
+ await c.query(fix);await c.query(fix);
+ const repaired=(await c.query("select has_table_privilege('authenticated','public.td_parcel_hidden_v51','TRUNCATE') p,has_table_privilege('authenticated','public.td_pickup_hidden_v53','TRUNCATE') b,has_table_privilege('authenticated','public.td_parcel_hidden_v51','SELECT') readable")).rows[0];
+ assert.deepEqual(repaired,{p:false,b:false,readable:true});
+ console.log('PASS legacy grant repair: repeat-safe, both TRUNCATE grants removed, SELECT preserved.');
  const owner=randomUUID(),staff=randomUUID(),customer=randomUUID(),other=randomUUID();
  await c.query('insert into auth.users(id) values($1),($2)',[owner,staff]);await c.query("insert into td_members(id,display_name,role,active,permissions) values($1,'Owner','owner',true,'{}'),($2,'Staff','staff',true,'{}')",[owner,staff]);
  await c.query("select set_config('request.jwt.claim.sub',$1,false)",[owner]);
@@ -41,7 +63,7 @@ try{
  await c.query('reset role');await auth(c);
  const fresh=(await rpc('td_scan_intake_v57',[randomUUID(),JSON.stringify([intake('CONCURRENT1'),intake('ROLLBACK1'),intake('HIDDEN100')])])).map(x=>x.parcel_id);
  // Real independent database connections prove concurrent checkout cannot double-charge.
- const second=pg.getPgClient();await second.connect();await auth(second);
+ const second=pg.getPgClient();await second.connect();await second.query("set statement_timeout='30s';set lock_timeout='5s';set idle_in_transaction_session_timeout='60s'");await auth(second);
  const duplicates=await Promise.all([rpc('td_scan_intake_v57',[randomUUID(),JSON.stringify([intake('RACEWAYBILL')])]),rpc('td_scan_intake_v57',[randomUUID(),JSON.stringify([intake('RACEWAYBILL')])],second)]);assert.equal(duplicates.flat().filter(x=>x.success).length,1);
  const simultaneous={...payload,items:[{parcel_id:fresh[0],pieces:2}]};const concurrent=await Promise.allSettled([rpc('td_scan_checkout_v57',[randomUUID(),JSON.stringify(simultaneous),true]),rpc('td_scan_checkout_v57',[randomUUID(),JSON.stringify(simultaneous),true],second)]);assert.equal(concurrent.filter(x=>x.status==='fulfilled').length,1);await second.end();
  // Failure after V32 ledger writes must roll back inventory, payment, receipt, batch and audit.
