@@ -22,7 +22,7 @@ with sync_playwright() as p:
         else:r.abort()
     pg.route('**/*',route);pg.goto('https://station.test/')
     def start():pg.evaluate("async()=>{window.__testRole='owner';user={id:'owner'};role='owner';document.getElementById('app').classList.remove('hidden');document.getElementById('auth').classList.add('hidden');await refresh()}")
-    start();pg.wait_for_url('**/#/home');assert pg.locator('.td-function-grid [data-route]').count()==14
+    start();pg.wait_for_url('**/#/home');assert pg.locator('.td-function-grid [data-route]').count()==15
     assert pg.locator('nav').count()==0
     # All root destinations remain reachable; the top-left home control is always present.
     ids=pg.locator('.td-function-grid [data-route]').evaluate_all('(xs)=>xs.map(x=>x.dataset.route)')

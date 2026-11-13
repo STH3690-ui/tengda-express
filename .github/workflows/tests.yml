@@ -35,8 +35,26 @@ jobs:
           python-version: '3.12'
       - run: pip install playwright==1.62.0
       - run: python -m playwright install --with-deps chromium webkit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: node scripts/generate-scan-fixtures.mjs
+      - run: python tests/browser_scan.py
+      - run: TD_BROWSER_ENGINE=webkit python tests/browser_scan.py
       - run: python tests/browser_navigation.py
       - run: TD_BROWSER_ENGINE=webkit python tests/browser_navigation.py
       - run: python tests/browser_smoke.py
       - run: python tests/browser_history_relations.py
       - run: python tests/browser_staff_delete.py
+
+  scan-database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: node scripts/test-scan-db.mjs
+      - run: node scripts/build-static.mjs
