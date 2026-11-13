@@ -23,7 +23,7 @@ with sync_playwright() as p:
             else:req.fulfill(status=404,body='')
         else:req.abort()
     page.route('**/*',route)
-    def show():page.evaluate("async()=>{user={id:'owner'};role='owner';document.getElementById('app').classList.remove('hidden');document.getElementById('auth').classList.add('hidden');page='deletions';await refresh();await loadDeletionLogs()}")
+    def show():page.evaluate("async()=>{user={id:'owner'};role='owner';document.getElementById('app').classList.remove('hidden');document.getElementById('auth').classList.add('hidden');await refresh();tdNavigate('deletions');await loadDeletionLogs()}")
     page.goto('https://station.test/');show()
     assert page.locator('.td-history-card').count()==4
     assert page.get_by_role('button',name='删除 · 预览关联',exact=True).count()==0

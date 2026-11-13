@@ -25,3 +25,18 @@ jobs:
         with:
           node-version: 24
       - run: npm test
+
+  navigation-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright==1.62.0
+      - run: python -m playwright install --with-deps chromium webkit
+      - run: python tests/browser_navigation.py
+      - run: TD_BROWSER_ENGINE=webkit python tests/browser_navigation.py
+      - run: python tests/browser_smoke.py
+      - run: python tests/browser_history_relations.py
+      - run: python tests/browser_staff_delete.py

@@ -13,7 +13,7 @@ window.supabase={createClient(){return {
  from(table){const q={select(){return q},order(){return q},range(){return q},limit(){return q},eq(){return q},update(){return q},insert(){return q},
  async maybeSingle(){return {data:{role:window.__role,active:window.__active,display_name:'测试员工'}}},
  then(resolve){return Promise.resolve({data:table==='td_customers'?[{id:'c1',name:'测试客户',phone:'123',notes:''}]:table==='td_members'?[{id:'staff1',role:'staff',active:window.__active,display_name:'测试员工',username:'staff_01'}]:[],error:null}).then(resolve)}};return q;},
- rpc:async()=>({data:[],error:null})
+ rpc(){const q={select(){return q},order(){return q},range(){return q},then(resolve){return Promise.resolve({data:[],error:null}).then(resolve)}};return q}
 }}};
 """
 with sync_playwright() as p:
@@ -37,20 +37,22 @@ with sync_playwright() as p:
     page.locator('#loginForm [name=password]').fill('safe-password-123')
     page.get_by_role('button',name='登录',exact=True).click()
     page.locator('#app').wait_for(state='visible')
-    page.get_by_role('button',name='客户',exact=True).click()
+    page.locator('[data-route=customers]').click()
     assert page.get_by_role('button',name='修改',exact=True).count()==1
     assert page.get_by_role('button',name='删除',exact=True).count()==0
     assert page.get_by_role('button',name='归档',exact=True).count()==0
-    assert page.get_by_role('button',name='账号管理',exact=True).count()==0
+    assert page.locator('[data-route=staff]').count()==0
     page.evaluate("window.__role='owner';tdCheckMember().then(()=>render())")
-    page.get_by_role('button',name='账号管理',exact=True).click()
+    page.get_by_role('button',name='返回主页',exact=True).click()
+    page.locator('[data-route=staff]').click()
     page.locator('#page [name=username]').fill('new_staff')
     page.locator('#page [name=display_name]').fill('新员工')
     page.locator('#page [name=password]').fill('safe-password-123')
     # Email is left blank deliberately; browser validation must allow submission.
     page.get_by_role('button',name='创建账号',exact=True).click()
     page.wait_for_function("window.__actions.some(x=>x.action==='create'&&x.email==='')")
-    page.get_by_role('button',name='客户',exact=True).click()
+    page.get_by_role('button',name='返回主页',exact=True).click()
+    page.locator('[data-route=customers]').click()
     assert page.get_by_role('button',name='删除',exact=True).count()==1
     assert page.get_by_role('button',name='归档',exact=True).count()==1
     assert page.locator('header.td-hero').is_visible()

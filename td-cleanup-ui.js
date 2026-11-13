@@ -14,7 +14,7 @@ async function tdCleanupPreview(){
     '</table></div><h3>包裹预览</h3><div class="scroll"><table><tr><th>客户</th><th>运单</th><th>内容</th><th>总件数</th><th>剩余</th><th>取件记录</th><th>结算批次</th></tr>'+
     (parcels.map(x=>'<tr><td>'+esc(name(x.customer_id))+'</td><td>'+esc(x.tracking_no)+'</td><td>'+esc(x.description)+'</td><td>'+Number(x.pieces||0)+'</td><td>'+Number(x.remaining||0)+'</td><td>'+Number(x.pickup_count||0)+'（保留）</td><td>'+Number(x.batch_count||0)+'（保留）</td></tr>').join('')||'<tr><td colspan="7">无符合条件包裹</td></tr>')+
     '</table></div><p class="muted">仅设置归档标记，不删除原始订单、财务、取件签收或结算记录。</p>'+
-    ((orders.length+parcels.length)?'<button class="primary" onclick="tdCleanupExecute(\''+esc(cutoff)+'\')">二次确认并归档</button>':'');
+    ((orders.length+parcels.length)?'<button class="primary danger" onclick="tdCleanupExecute(\''+esc(cutoff)+'\')">二次确认并归档</button>':'');
 }
 async function tdCleanupExecute(cutoff){
   if(role!=='owner') return notify('仅管理员可操作',true);

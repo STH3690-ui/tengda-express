@@ -33,7 +33,7 @@ with sync_playwright() as p:
     page.route('**/*',route)
     page.goto('https://station.test/')
     def show():
-        page.evaluate("async()=>{user={id:'owner'};role='owner';document.getElementById('app').classList.remove('hidden');document.getElementById('auth').classList.add('hidden');page='staffAudit';await refresh()}")
+        page.evaluate("async()=>{user={id:'owner'};role='owner';document.getElementById('app').classList.remove('hidden');document.getElementById('auth').classList.add('hidden');await refresh();tdNavigate('staffAudit')}")
     show()
     assert page.locator('#tdAuditResults input[type=checkbox]').count()==7
     page.locator('#tdAuditResults input[type=checkbox]').nth(0).check()
