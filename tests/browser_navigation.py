@@ -70,7 +70,8 @@ with sync_playwright() as p:
         pg.set_viewport_size({'width':w,'height':h})
         assert pg.locator('.td-function-grid').evaluate('(e)=>getComputedStyle(e).gridTemplateColumns.split(" ").length')==cols
         for target in ids+['payments','deletions','cleanup']:
-            pg.evaluate('(id)=>tdNavigate(id)',target);pg.wait_for_timeout(40)
+            # WebKit limits history writes to 100 per 10 seconds; keep real navigation checks below that rate.
+            pg.evaluate('(id)=>tdNavigate(id)',target);pg.wait_for_timeout(300)
             assert pg.locator('.td-page-backbar .td-home-back').count()==1
             assert pg.locator('body').evaluate('(e)=>e.scrollWidth<=innerWidth'),(w,h,target)
             if target=='deletions':
