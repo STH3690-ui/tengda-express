@@ -38,7 +38,7 @@ with sync_playwright() as p:
  def scan(code):pg.evaluate('(code)=>tdScanAccept(code)',code)
  accept=lambda d:d.accept();pg.on('dialog',accept)
  go('scanQuery');assert pg.evaluate('__gumCalls.length')==0
- pg.evaluate("()=>{navigator.mediaDevices.getUserMedia=async opts=>{__gumCalls.push(opts);throw new DOMException('denied','NotAllowedError')}}")
+ pg.evaluate("()=>{Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async opts=>{__gumCalls.push(opts);throw new DOMException('denied','NotAllowedError')}}})}")
  pg.get_by_role('button',name='开启摄像头',exact=True).click();pg.wait_for_function("document.getElementById('tdScanMessage').textContent.includes('授权被拒绝')")
  # HID scanner in focused input, including Enter terminator.
  pg.locator('#tdScanInput').fill('picked100');pg.locator('#tdScanInput').press('Enter');pg.wait_for_function("document.getElementById('tdScanQueryResult').textContent.includes('已取件')")
