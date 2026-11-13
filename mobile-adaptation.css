@@ -1,0 +1,10 @@
+/* Shared PWA / Android TWA layout. Browser-provided safe areas protect cutouts and gestures. */
+html{scroll-padding-top:calc(64px + env(safe-area-inset-top,0px))}
+body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+header.td-hero .td-hero-inner{padding-top:calc(22px + env(safe-area-inset-top,0px))}
+.nav{top:env(safe-area-inset-top,0px);max-width:100%;overscroll-behavior-x:contain}
+form .grid{grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr))}
+.grid>*{min-width:0}.scroll{max-width:100%;overscroll-behavior-x:contain}
+input,select,textarea{max-width:100%}
+@media(orientation:landscape) and (max-height:500px){.td-history-dialog{max-height:calc(100dvh - 24px)}.nav{position:relative}}
+@media(min-width:768px){.photo-grid{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}}
