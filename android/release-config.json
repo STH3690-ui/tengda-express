@@ -1,0 +1,9 @@
+{
+  "packageId": "com.tengda.express",
+  "versionName": "3.2.0",
+  "versionCode": 32000,
+  "webManifestUrl": "https://tengda-express-station.netlify.app/manifest.webmanifest",
+  "iconUrl": "https://tengda-express-station.netlify.app/icon-512.png",
+  "originalIconSha256": "e1117c224831e22444ed66789a0152b455b7fdc835d54788955cf09f6f11aedb",
+  "sha256Fingerprint": "F9:0A:BA:8D:E4:40:76:A8:8D:22:31:48:B4:B3:80:76:FA:65:DD:28:C3:B8:EF:52:0E:26:04:65:16:24:1A:12"
+}

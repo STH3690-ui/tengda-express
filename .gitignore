@@ -7,3 +7,15 @@ __pycache__/
 *.pyc
 
 dist/
+
+# Android generated outputs and all private signing material
+android/project/
+android/artifacts/
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.apk
+*.aab
+local.properties
+.gradle/

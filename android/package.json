@@ -1,0 +1,1 @@
+{"name":"tengda-android-twa","private":true,"version":"3.2.0","scripts":{"generate":"node generate.cjs"},"dependencies":{"@bubblewrap/cli":"1.27.0","@bubblewrap/core":"1.27.0"},"engines":{"node":">=22"}}

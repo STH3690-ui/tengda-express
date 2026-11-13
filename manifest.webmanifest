@@ -1,5 +1,5 @@
 {
-  "name": "腾达快递站 · TENG DA EXPRESS STATION",
+  "name": "腾达快递站",
   "short_name": "腾达快递站",
   "start_url": "/",
   "scope": "/",
@@ -19,5 +19,7 @@
       "type": "image/png",
       "purpose": "any"
     }
-  ]
+  ],
+  "id": "/",
+  "orientation": "any"
 }

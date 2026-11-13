@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.tengda.express",
+      "sha256_cert_fingerprints": [
+        "F9:0A:BA:8D:E4:40:76:A8:8D:22:31:48:B4:B3:80:76:FA:65:DD:28:C3:B8:EF:52:0E:26:04:65:16:24:1A:12"
+      ]
+    }
+  }
+]

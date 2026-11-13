@@ -1,0 +1,86 @@
+name: Android TWA
+on:
+  pull_request:
+    paths: ['android/**', 'icon-512.png', 'manifest.webmanifest', '.github/workflows/android.yml']
+  workflow_dispatch:
+  push:
+    tags: ['android-v*']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: android/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - run: npm ci --ignore-scripts
+        working-directory: android
+      - run: npm run generate
+        working-directory: android
+      - name: Load release signing key
+        if: github.event_name != 'pull_request'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_BASE64" && test -n "$STORE_PASSWORD" && test -n "$KEY_PASSWORD" && test -n "$KEY_ALIAS" || { echo 'Missing signing secrets: follow android/README.md. Refusing an unsigned release.'; exit 1; }
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/tengda-release.p12"
+      - name: Build APK and AAB
+        working-directory: android/project
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ github.event_name != 'pull_request' && format('{0}/tengda-release.p12', runner.temp) || '' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: ./gradlew --no-daemon --max-workers=2 assembleRelease bundleRelease
+      - name: Verify signed release
+        if: github.event_name != 'pull_request'
+        run: |
+          export PATH="$ANDROID_HOME/build-tools/36.0.0:$PATH"
+          python3 android/verify-release.py android/project/app/build/outputs/apk/release/app-release.apk android/project/app/build/outputs/bundle/release/app-release.aab
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tengda-android-${{ github.sha }}
+          path: |
+            android/project/app/build/outputs/apk/release/*.apk
+            android/project/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+      - name: Remove signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/tengda-release.p12"
+  publish:
+    if: startsWith(github.ref, 'refs/tags/android-v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: tengda-android-${{ github.sha }}
+          path: artifacts
+      - name: Publish verified release artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          find artifacts -name '*.apk' -exec cp {} tengda-express.apk \;
+          find artifacts -name '*.aab' -exec cp {} tengda-express.aab \;
+          sha256sum tengda-express.apk tengda-express.aab > SHA256SUMS.txt
+          gh release create "$GITHUB_REF_NAME" tengda-express.apk tengda-express.aab SHA256SUMS.txt --repo "$GITHUB_REPOSITORY" --verify-tag --title "腾达快递站 $GITHUB_REF_NAME" --notes 'Official signed TWA. Android 7.0+, compatible TWA browser required. Uses the existing production PWA and original fox icon.'
