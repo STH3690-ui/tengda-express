@@ -16,8 +16,8 @@ function tdScanLeave(){tdScanStop();tdScan.rows=[];tdScan.query=[];tdScan.result
 async function tdScanStart(){
  if(!tdScanAvailable(tdScanMode()))return tdScanMessage('扫码服务或权限未就绪；请先检查服务，仍可手动输入',true);
  if(!navigator.mediaDevices?.getUserMedia)return tdScanMessage('此浏览器不支持摄像头，请使用 HTTPS、更新浏览器或手动输入 / 扫码枪',true);
- tdScanStop();const token=tdScan.cameraToken;const video=$('tdScanVideo');
- try{tdScan.audio=tdScan.audio||new (window.AudioContext||window.webkitAudioContext)();await tdScan.audio.resume()}catch{}
+ tdScanStop();tdScanMessage('正在打开摄像头…');const token=tdScan.cameraToken;const video=$('tdScanVideo');
+ try{tdScan.audio=tdScan.audio||new (window.AudioContext||window.webkitAudioContext)();tdScan.audio.resume().catch(()=>{})}catch{}
  try{
   const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:tdScan.device?{deviceId:{exact:tdScan.device}}:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
   if(token!==tdScan.cameraToken||!video?.isConnected){stream.getTracks().forEach(t=>t.stop());return;}
