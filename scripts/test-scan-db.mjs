@@ -32,6 +32,7 @@ try{
  await assert.rejects(rpc('td_scan_lookup_v57',['javascript:alert(1)','query']));
  const payload={customer_id:customer,items:[{parcel_id:p,pieces:2}],weight:1.5,rate:7000,paid:5000,method:'现金',name:'Receiver',phone:'',notes:''};
  await assert.rejects(rpc('td_scan_checkout_v57',[randomUUID(),JSON.stringify(payload),false]));
+ const late=randomUUID();assert.equal(await rpc('td_scan_request_v57',[late]),null);await assert.rejects(rpc('td_scan_checkout_v57',[late,JSON.stringify(payload),true]),/请求编号/);assert.equal((await rpc('td_scan_lookup_v57',['ZX10001','query']))[0].remaining,2);
  const checkout=randomUUID(),paid=await rpc('td_scan_checkout_v57',[checkout,JSON.stringify(payload),true]);assert.equal(paid.success,true);assert.deepEqual(await rpc('td_scan_checkout_v57',[checkout,JSON.stringify(payload),true]),paid);
  await assert.rejects(rpc('td_scan_checkout_v57',[randomUUID(),JSON.stringify(payload),true]));
  assert.equal((await rpc('td_scan_lookup_v57',['ZX10001','query']))[0].status,'picked');assert.equal((await rpc('td_scan_lookup_v57',['ZX10001','query']))[0].pickups.length,1);

@@ -144,7 +144,12 @@ declare prior td_private.scan_requests_v57;x record;p public.td_parcels;b uuid;r
  insert into td_private.scan_requests_v57 values(p_request,auth.uid(),'pickup',p_payload,r,now());return r;
 end$$;
 create function public.td_scan_request_v57(p_request uuid) returns jsonb language plpgsql security definer set search_path='' as $$declare v jsonb;begin
- perform td_private.scan_auth_v57();perform pg_advisory_xact_lock(hashtextextended(p_request::text,5702));select jsonb_build_object('operation',operation,'result',result) into v from td_private.scan_requests_v57 where request_id=p_request and actor=auth.uid();return v;
+ perform td_private.scan_auth_v57();if p_request is null then raise exception '请求编号必填';end if;
+ perform pg_advisory_xact_lock(hashtextextended(p_request::text,5702));
+ select jsonb_build_object('operation',operation,'result',result) into v from td_private.scan_requests_v57 where request_id=p_request and actor=auth.uid() and operation in ('intake','pickup');
+ -- Fence a request that has not reached the database yet. Late network delivery cannot commit after a negative status response.
+ if v is null then insert into td_private.scan_requests_v57 values(p_request,auth.uid(),'cancelled','{}','{}',now()) on conflict(request_id) do nothing;end if;
+ return v;
 end$$;
 -- Only RPCs expose minimal data. No client writes to audit or private request records.
 revoke all on function td_private.scan_key_v57(text),td_private.scan_auth_v57(text),td_private.scan_valid_v57(text),td_private.scan_hidden_v57(public.td_parcels),td_private.scan_unique_v57() from public,anon,authenticated;
