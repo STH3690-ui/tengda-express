@@ -4,6 +4,8 @@ export async function run({c,pg,auth,rpc,owner,staff}){
  const session=randomUUID(),digest=s=>createHash('sha256').update(s).digest('hex');
  const payload=(name='Live Customer',phone='09955555555',label='first')=>({name,phone,session_id:session,label_digest:digest(label),stable_frames:3,confidence:98,min_confidence:95});
  const intake=(p,id=randomUUID(),confirmed=false,client=c)=>rpc('td_live_intake_v59',[id,JSON.stringify(p),confirmed],client);
+ await c.query('reset role');await c.query("create table if not exists public.td_station_addresses(phones text);insert into public.td_station_addresses(phones) values('09978787878, +86 13999999999')");await auth(c,owner);
+ await assert.rejects(intake(payload('Warehouse Person','09978787878','warehouse')),/站点|仓库/);
  const p=payload(),id=randomUUID();const r=await intake(p,id);assert.equal(r.parcel_number,'TD59'+id.replaceAll('-',''));assert.equal(r.customer_created,true);assert.deepEqual(await intake(p,id),r);
  await c.query('reset role');const parcel=(await c.query('select pieces,remaining,weight_kg from td_parcels where id=$1',[r.parcel_id])).rows[0];assert.equal(parcel.pieces,1);assert.equal(Number(parcel.weight_kg),0);await auth(c);
  await assert.rejects(intake(p));await assert.rejects(intake(payload('Live Customer','09955555555','different parcel')));

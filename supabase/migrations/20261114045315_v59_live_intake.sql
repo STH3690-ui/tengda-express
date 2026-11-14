@@ -10,11 +10,18 @@ alter table td_private.live_requests_v59 enable row level security;
 revoke all on td_private.live_requests_v59 from public,anon,authenticated;
 create index live_digest_v59 on td_private.live_requests_v59(label_digest);
 create index live_actor_customer_v59 on td_private.live_requests_v59(actor,customer_key,created_at);
+create function td_private.live_station_phone_v59(p text) returns boolean language plpgsql stable security definer set search_path='' as $$declare hit boolean:=false;begin
+ if to_regclass('public.td_station_addresses') is not null then
+  execute $q$select exists(select 1 from public.td_station_addresses s cross join lateral regexp_split_to_table(coalesce(s.phones,''),'[,，;；/|\n]+') x(v) where td_private.label_phone_v58(x.v)=$1)$q$ into hit using p;
+ end if;return hit;
+end$$;
+revoke all on function td_private.live_station_phone_v59(text) from public,anon,authenticated;
 create function public.td_live_capabilities_v59() returns jsonb language plpgsql security definer set search_path='' as $$begin return public.td_label_capabilities_v58()||jsonb_build_object('version',59);end$$;
 create function public.td_live_resolve_v59(p_name text,p_phone text,p_digest text,p_session uuid) returns jsonb language plpgsql security definer set search_path='' as $$
 declare n text:=td_private.label_name_v58(p_name);p text:=td_private.label_phone_v58(p_phone);k text;begin
  perform td_private.scan_auth_v57('parcel_create');perform td_private.scan_auth_v57('customer_edit');
  if length(n) not between 2 and 60 or n~'[0-9<>:*×#]' or p='' or p_digest is null or p_digest!~'^[a-f0-9]{64}$' or p_session is null then raise exception '请核对末尾客户姓名和完整号码';end if;
+ if td_private.live_station_phone_v59(p) then return jsonb_build_object('status','review','reason','该号码属于已配置站点或仓库，请核对地址末尾客户');end if;
  k:=md5(n||'|'||p);
  return td_private.label_match_v58(n,p)||jsonb_build_object('needs_distinct_confirmation',exists(select 1 from td_private.live_requests_v59 x where x.label_digest=p_digest or (x.actor=auth.uid() and x.customer_key=k and (x.session_id=p_session or x.created_at>now()-interval '15 minutes'))));
 end$$;

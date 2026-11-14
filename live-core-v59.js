@@ -18,10 +18,12 @@ function parse(raw){
    let segment=before.split(/[,，;；|/\n]/).at(-1).trim().replace(/[-:：]+$/,'').trim();
    if(/^[\p{Script=Han}·]{2,12}$/u.test(segment))name=segment;
    else if(/^[A-Za-z][A-Za-z .'-]{1,59}$/.test(segment))name=segment;
-   else {const end=/(?:^|\s)([\p{Script=Han}·]{2,12})$/u.exec(segment);if(end)name=end[1];}
+   else {const end=/(?:^|\s)([\p{Script=Han}·]{2,12})$/u.exec(segment);if(end)name=end[1];else if(/^[\p{Script=Han}· ]{2,25}$/u.test(segment))name=segment.replace(/ /g,'');}
   }
-  if(!/^(?:[\p{Script=Han}·]{2,12}|[A-Za-z][A-Za-z .'-]{1,59})$/u.test(name)||/(?:省|地址|仓库|物流|收件|收货|街道|号楼|大厦|园区|warehouse|recipient|road|street)/i.test(name))name='';
+  if(/^[\p{Script=Han}· ]+$/u.test(name))name=name.replace(/ /g,'');
+  if(!/^(?:[\p{Script=Han}·]{2,12}|[A-Za-z][A-Za-z .'-]{1,59})$/u.test(name)||/(?:省|地址|仓|物流|收件|收货|街道|号楼|大厦|园区|warehouse|recipient|road|street)/i.test(name))name='';
  }else issues.push('未找到完整中国或缅甸手机号码');
+ if((tail.match(/(?:^|[\n,，;；|])\s*(?:客户(?:姓名)?|末尾客户|customer|client)\s*[:：]/gi)||[]).length>1)issues.push('末尾存在多个客户标签，请人工核对');
  if(!name)issues.push('末尾客户姓名不明确，请手动核对');
  if(text.length>10000)issues.push('识别区域过大');
  return {name,phone:c?.phone||'',phone_raw:c?.raw||'',issues,eligible:issues.length===0,key:name&&c?name+'|'+c.phone:'',canonical:tail.normalize('NFKC').toUpperCase().replace(/[^\p{L}\d+]/gu,'')};
