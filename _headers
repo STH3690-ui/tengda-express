@@ -53,3 +53,10 @@
   Cache-Control: no-cache
 /capture-v60.css
   Cache-Control: no-cache
+
+/photo-core-v61.js
+  Cache-Control: no-cache
+/photo-ui-v61.js
+  Cache-Control: no-cache
+/photo-v61.css
+  Cache-Control: no-cache
