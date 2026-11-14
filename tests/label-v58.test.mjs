@@ -31,3 +31,16 @@ test('same phone different name must be reviewed',()=>{
  const {matchCustomer}=require('../label-v58.js');
  assert.equal(matchCustomer([{id:'c1',name:'小明',phone:'09943253053'}],{name:'安康',phone:'09943253053'}).status,'review');
 });
+
+test('phone with spaces matches after normalization',()=>{
+ const {matchCustomer}=require('../label-v58.js');
+ assert.equal(matchCustomer([{id:'c1',name:'安康',phone:'099 4325 3053'}],{name:'安康',phone:'09943253053'}).status,'matched');
+});
+test('two matching customers must be reviewed',()=>{
+ const {matchCustomer}=require('../label-v58.js');
+ assert.equal(matchCustomer([{id:'c1',name:'安康',phone:'09943253053'},{id:'c2',name:'安康',phone:'09943253053'}],{name:'安康',phone:'09943253053'}).status,'review');
+});
+test('no customer match returns new without creating records',()=>{
+ const {matchCustomer}=require('../label-v58.js');
+ assert.equal(matchCustomer([],{name:'安康',phone:'09943253053'}).status,'new');
+});
