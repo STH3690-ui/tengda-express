@@ -27,7 +27,7 @@ with sync_playwright() as p:
  pg.locator('#tdLiveManual').click();pg.wait_for_function("__liveCalls.filter(x=>x.name==='td_live_intake_v59').length===2");assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_live_intake_v59').at(-1).args.p_confirmed") is True
  pg.evaluate("__text=''");pg.wait_for_function('!tdLive.gate.locked');pg.evaluate("__text='地址: 转运仓库, 李明 09943253053'");pg.wait_for_function("__liveCalls.filter(x=>x.name==='td_live_intake_v59').length===3");assert pg.locator('#tdLiveRecent li').count()==3;assert pg.evaluate("data.td_parcels.filter(x=>x.remaining===1 && /^[a-f0-9-]{36}$/.test(x.id)).length")==3
  # Stop is a physical track stop, not only a hidden preview.
- pg.locator('#tdV59Legacy > summary').click();assert pg.evaluate('__stops>0 && tdLive.stream===null')
+ pg.locator('#tdV59Legacy > summary').click();pg.wait_for_function('__stops>0 && tdLive.stream===null')
  pg.locator('#tdLiveName').fill('Manual Client');pg.locator('#tdLivePhone').fill('09922222222');pg.evaluate('__online=false');pg.locator('#tdLiveManual').click();assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_live_intake_v59').length")==3
  pg.evaluate('__online=true;__lost=true');pg.locator('#tdLiveManual').click();pg.wait_for_function('!!tdLive.pending && !tdLive.busy');n=pg.evaluate('__liveCalls.length');pg.locator('#tdLiveManual').click();assert pg.evaluate('__liveCalls.length')==n
  pg.locator('#tdLiveResolve').click();pg.wait_for_function('!tdLive.pending && !tdLive.busy');assert '上次已入库' in pg.locator('#tdLiveStatus').inner_text()
