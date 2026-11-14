@@ -23,5 +23,9 @@ with sync_playwright() as p:
  print(json.dumps({'engine':engine,'actual_wasm_ocr':r,'errors':errors}))
  assert 'TD12345678' in r['text'] and '09943253053' in r['text'],r
  assert not any('Content Security Policy' in e for e in errors),errors
+ pg.locator('#fixture').set_input_files(str(ROOT/'tests/fixtures/label-v58-synthetic.png'))
+ cn=pg.evaluate('async()=>TDLabelOCR.recognize(document.getElementById("fixture").files[0])')
+ print(json.dumps({'engine':engine,'chinese_fixture':cn},ensure_ascii=False))
+ assert 'TD12345678' in cn['text'] and '09943253053' in cn['text'] and '客户' in cn['text'],cn
  pg.evaluate('TDLabelOCR.stop()');b.close()
 server.shutdown()
