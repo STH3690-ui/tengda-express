@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test --test-isolation=none tests/*.test.mjs",
-    "check": "node --check scan-core.js && node --check scan.js && node --check navigation.js && node --check tengda-staff-auth-v32.js && node --check supabase/functions/staff-auth/handler.mjs && node --check label-v58.js && node --check label-ocr-v58.js && node --check label-ui-v58.js && node --check live-core-v59.js && node --check live-ui-v59.js && node --check capture-core-v60.js && node --check capture-ui-v60.js && node --check photo-core-v61.js && node --check photo-ui-v61.js"
+    "check": "node --check scan-core.js && node --check scan.js && node --check navigation.js && node --check tengda-staff-auth-v32.js && node --check supabase/functions/staff-auth/handler.mjs && node --check label-v58.js && node --check label-ocr-v58.js && node --check label-ui-v58.js && node --check live-core-v59.js && node --check live-ui-v59.js && node --check capture-core-v60.js && node --check capture-ui-v60.js && node --check photo-core-v61.js && node --check photo-ui-v61.js && node --check intake-core-v62.js && node --check intake-ui-v62.js"
   },
   "engines": {
     "node": ">=22"
