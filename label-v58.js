@@ -17,7 +17,18 @@ function parseLabel(raw){
  if(name.length!==1)issues.push('收件人姓名缺失或不唯一');
  if(phone.length!==1)issues.push('完整手机号缺失或不唯一');
  if(/\*{2,}|[×X]{3,}/.test(text))issues.push('面单存在隐藏信息，请核对');
+ if(tracking.length===1 && /^(?:\d{3}[- ]?[A-Z]\d{2}|\d{3}[- ]?[A-Z]\d{2}\s+\d{3})$/i.test(tracking[0]))issues.push('疑似分拣码，不能作为运单号');
  return {tracking_no:tracking.length===1?tracking[0]:'',name:name.length===1?name[0]:'',phone:phone.length===1?phone[0]:'',carrier,issues,eligible_for_auto_intake:issues.length===0};
 }
-const api={parseLabel};root.TDLabelV58=api;if(typeof module!=='undefined')module.exports=api;
+function matchCustomer(customers,parsed){
+ if(!parsed.name||!parsed.phone||!Array.isArray(customers))return {status:'review',reason:'姓名、手机号不完整'};
+ const samePhone=customers.filter(c=>!c.deleted_at&&clean(c.phone).replace(/[\\s-]/g,'')===parsed.phone);
+ const exact=samePhone.filter(c=>clean(c.name)===parsed.name);
+ if(exact.length===1&&samePhone.length===1)return {status:'matched',customer_id:exact[0].id};
+ if(samePhone.length>0)return {status:'review',reason:'手机号对应多个客户或姓名不一致'};
+ const sameName=customers.filter(c=>!c.deleted_at&&clean(c.name)===parsed.name);
+ if(sameName.length>0)return {status:'review',reason:'同名客户存在，需人工核对手机号'};
+ return {status:'new',reason:'未找到客户，可在授权流程中创建'};
+}
+const api={parseLabel,matchCustomer};root.TDLabelV58=api;if(typeof module!=='undefined')module.exports=api;
 })(globalThis);
