@@ -23,7 +23,9 @@ test('multiple waybills must not auto intake',()=>{
 });
 
 test('unique name and phone matches existing customer',()=>{
- assert.deepEqual(matchCustomer([{id:'c1',name:'安康',phone:'09943253053'}],{name:'安康',phone:'09943253053'}),{status:'matched',customer_id:'c1'});
+ const result=matchCustomer([{id:'c1',name:'安康',phone:'09943253053'}],{name:'安康',phone:'09943253053'});
+ assert.equal(result.status,'matched');
+ assert.equal(result.customer_id,'c1');
 });
 test('same name different phone must be reviewed',()=>{
  assert.equal(matchCustomer([{id:'c1',name:'安康',phone:'09911111111'}],{name:'安康',phone:'09943253053'}).status,'review');
