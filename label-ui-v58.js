@@ -5,7 +5,7 @@ function tdV58Message(message){const box=$('tdV58Result');if(box)box.textContent
 function tdV58TextEdited(){tdLabel.revision=(tdLabel.revision||0)+1;tdLabel.evidence={...tdLabel.evidence,edited:true};tdLabel.parsed=null;if($('tdV58Commit'))$('tdV58Commit').disabled=true;}
 async function tdV58Capabilities(){if(tdLabel.capActor!==user?.id){tdLabel.cap=null;tdLabel.capActor=user?.id}if(!tdLabel.cap)tdLabel.cap=await tdScanRpc('td_label_capabilities_v58');return tdLabel.cap;}
 async function tdV58ReadPhoto(input){
- const file=input.files?.[0];if(!file||tdLabel.busy||tdLabel.pending||tdScan.busy||tdScan.uncertain)return;
+ if(typeof tdV59Stop==='function')tdV59Stop();const file=input.files?.[0];if(!file||tdLabel.busy||tdLabel.pending||tdScan.busy||tdScan.uncertain)return;
  const epoch=++tdLabel.epoch;tdLabel.file=file;tdLabel.busy=true;tdNav.pending++;input.disabled=true;$('tdV58Text').disabled=true;
  try{tdV58Message('本机识别中，首次加载中文字库可能需要等待…');
   const result=await TDLabelOCR.recognize(file,(_,p)=>{if(epoch===tdLabel.epoch&&page==='scanIntake')tdV58Message('本机识别中 '+p+'%')});
@@ -36,6 +36,7 @@ async function tdV58Preview(fromOCR=false){
 function tdV58Key(){return 'td-label-request-v58:'+user.id;}
 function tdV58Pending(id){tdLabel.pending=id;try{id?sessionStorage.setItem(tdV58Key(),id):sessionStorage.removeItem(tdV58Key())}catch{}if($('tdV58Resolve'))$('tdV58Resolve').hidden=!id;}
 async function tdV58Commit(automatic=false){
+ if(typeof tdLive!=='undefined'&&(tdLive.busy||tdLive.pending))return tdV58Message('请先完成或核实实时入库请求');if(typeof tdV59Stop==='function')tdV59Stop();
  if(page!=='scanIntake'||tdLabel.busy||tdLabel.pending||tdScan.busy||tdScan.uncertain||!navigator.onLine)return tdV58Message('正在处理、请求待核实或离线，不能提交');
  const p=tdLabel.parsed;if(!p?.eligible_for_auto_intake||p.match?.status==='review'||!p.match)return tdV58Message('请先核对面单并匹配客户');
  const pieces=Number($('tdV58Pieces').value),weight=Number($('tdV58Weight').value),create=!!$('tdV58Create').checked;

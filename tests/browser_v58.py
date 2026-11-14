@@ -16,7 +16,7 @@ with sync_playwright() as p:
   else:r.abort()
  pg.route('**/*',route);pg.goto('https://station.test/')
  pg.evaluate("""async()=>{user={id:'owner'};role='owner';$('app').classList.remove('hidden');$('auth').classList.add('hidden');await refresh();window.__v58=[];window.__state='matched';window.__online=true;Object.defineProperty(navigator,'onLine',{get:()=>__online,configurable:true});const original=db.rpc.bind(db);db.rpc=async(name,args)=>{if(name.startsWith('td_label_')){__v58.push({name,args});if(name==='td_label_capabilities_v58')return {data:{version:58,intake:true,create_customer:true,parcel_edit:true}};if(name==='td_label_resolve_v58')return {data:{status:__state,reason:__state,customer_id:'c'}};if(name==='td_label_intake_v58'){if(window.__lost)return {error:{message:'Response lost'}};return {data:{success:true,parcel_id:'saved',customer_created:__state==='new'}}}if(name==='td_label_request_v58')return {data:null}}if(name==='td_scan_capabilities_v57')return {data:{version:57,intake:true,pickup:true,finance:true}};return original(name,args)};uploadPhotos=async()=>{window.__photo=true};tdNavigate('scanIntake')}""")
- pg.wait_for_function('tdScan.ready');assert pg.locator('#tdV58PreviewPanel').is_visible()
+ pg.wait_for_function('tdScan.ready');pg.locator('#tdV59Legacy > summary').click();assert pg.locator('#tdV58PreviewPanel').is_visible()
  text='运单号: TD12345678\n收件人: 安康\n手机号: 09943253053'
  def preview(value):
   pg.locator('#tdV58Text').fill(value);pg.get_by_role('button',name='核对并匹配客户',exact=True).click()

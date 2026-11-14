@@ -35,6 +35,7 @@ with sync_playwright() as p:
   got=pg.evaluate("async u=>{const reader=new ZXing.BrowserMultiFormatReader();const r=await reader.decodeFromImageUrl(u);reader.reset();return r.getText()}",'data:image/png;base64,'+data);assert got==expected,(fmt,got);decoded.append(fmt)
  def go(target):
   pg.evaluate('(target)=>tdNavigate(target)',target);pg.wait_for_function('tdScan.ready')
+  if target=='scanIntake':pg.locator('#tdV59Legacy > summary').click()
  def scan(code):pg.evaluate('(code)=>tdScanAccept(code)',code)
  accept=lambda d:d.accept();pg.on('dialog',accept)
  go('scanQuery');assert pg.evaluate('__gumCalls.length')==0
