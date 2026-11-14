@@ -27,5 +27,9 @@ with sync_playwright() as p:
  cn=pg.evaluate('async()=>TDLabelOCR.recognize(document.getElementById("fixture").files[0])')
  print(json.dumps({'engine':engine,'chinese_fixture':cn},ensure_ascii=False))
  assert 'TD12345678' in cn['text'] and '09943253053' in cn['text'] and '客户' in cn['text'],cn
+ pg.locator('#fixture').set_input_files(str(ROOT/'tests/fixtures/v59-address-tail.png'))
+ live=pg.evaluate('''async()=>{const f=document.getElementById("fixture").files[0],image=new Image(),url=URL.createObjectURL(f);try{await new Promise((ok,no)=>{image.onload=ok;image.onerror=no;image.src=url});const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);const r=await TDLabelOCR.recognizeCanvas(c),p=TDLiveV59.parse(r.text);return {text:r.text,name:p.name,phone:p.phone,eligible:p.eligible,evidence:tdV59Evidence(r,p)}}finally{URL.revokeObjectURL(url)}}''')
+ print(json.dumps({'engine':engine,'real_v59_canvas_ocr':live},ensure_ascii=False))
+ assert live['name']=='测试客户' and live['phone']=='09943253053' and live['eligible'],live
  pg.evaluate('TDLabelOCR.stop()');b.close()
 server.shutdown()

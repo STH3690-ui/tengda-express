@@ -5,7 +5,7 @@ function tdV58Message(message){const box=$('tdV58Result');if(box)box.textContent
 function tdV58TextEdited(){tdLabel.revision=(tdLabel.revision||0)+1;tdLabel.evidence={...tdLabel.evidence,edited:true};tdLabel.parsed=null;if($('tdV58Commit'))$('tdV58Commit').disabled=true;}
 async function tdV58Capabilities(){if(tdLabel.capActor!==user?.id){tdLabel.cap=null;tdLabel.capActor=user?.id}if(!tdLabel.cap)tdLabel.cap=await tdScanRpc('td_label_capabilities_v58');return tdLabel.cap;}
 async function tdV58ReadPhoto(input){
- const file=input.files?.[0];if(!file||tdLabel.busy||tdLabel.pending||tdScan.busy||tdScan.uncertain)return;
+ if(typeof tdV59Stop==='function')tdV59Stop();const file=input.files?.[0];if(!file||tdLabel.busy||tdLabel.pending||tdScan.busy||tdScan.uncertain)return;
  const epoch=++tdLabel.epoch;tdLabel.file=file;tdLabel.busy=true;tdNav.pending++;input.disabled=true;$('tdV58Text').disabled=true;
  try{tdV58Message('本机识别中，首次加载中文字库可能需要等待…');
   const result=await TDLabelOCR.recognize(file,(_,p)=>{if(epoch===tdLabel.epoch&&page==='scanIntake')tdV58Message('本机识别中 '+p+'%')});

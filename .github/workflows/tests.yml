@@ -43,6 +43,8 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: node scripts/generate-scan-fixtures.mjs
+      - run: python tests/browser_v59.py
+      - run: TD_BROWSER_ENGINE=webkit python tests/browser_v59.py
       - run: python tests/browser_v58.py
       - run: TD_BROWSER_ENGINE=webkit python tests/browser_v58.py
       - run: python tests/browser_v58_ocr.py
@@ -64,5 +66,5 @@ jobs:
         with:
           node-version: 24
       - run: npm ci
-      - run: TD_TEST_V58=1 timeout 120s node scripts/test-scan-db.mjs
+      - run: TD_TEST_V58=1 TD_TEST_V59=1 timeout 120s node scripts/test-scan-db.mjs
       - run: node scripts/build-static.mjs
