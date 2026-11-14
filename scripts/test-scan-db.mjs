@@ -28,6 +28,7 @@ try{
  const sql=await readFile('supabase/migrations/20261114045315_v59_live_intake.sql','utf8');
  await assert.rejects(c.query(sql.replace("notify pgrst","select 1/0;notify pgrst")));await c.query('rollback');assert.equal((await c.query("select to_regclass('td_private.live_requests_v59') t")).rows[0].t,null);await c.query(sql);
  }
+ if(process.env.TD_TEST_V60==='1'){const sql=await readFile('supabase/migrations/20261114061605_v60_stable_capture.sql','utf8');await assert.rejects(c.query(sql.replace("notify pgrst","select 1/0;notify pgrst")));await c.query('rollback');assert.equal((await c.query("select to_regprocedure('public.td_capture_intake_v60(uuid,jsonb,boolean)') t")).rows[0].t,null);await c.query(sql);}
  const owner=randomUUID(),staff=randomUUID(),customer=randomUUID(),other=randomUUID();
  await c.query('insert into auth.users(id) values($1),($2)',[owner,staff]);await c.query("insert into td_members(id,display_name,role,active,permissions) values($1,'Owner','owner',true,'{}'),($2,'Staff','staff',true,'{}')",[owner,staff]);
  await c.query("select set_config('request.jwt.claim.sub',$1,false)",[owner]);
@@ -66,5 +67,6 @@ try{
  assert.equal((await c.query("select has_schema_privilege('authenticated','td_private','USAGE') ok")).rows[0].ok,true);
  if(process.env.TD_TEST_V58==='1')await (await import('../tests/v58-db-checks.mjs')).run({c,pg,auth,rpc,owner,staff});
  if(process.env.TD_TEST_V59==='1')await (await import('../tests/v59-db-checks.mjs')).run({c,pg,auth,rpc,owner,staff});
+ if(process.env.TD_TEST_V60==='1')await (await import('../tests/v60-db-checks.mjs')).run({c,pg,auth,rpc,owner,staff});
  console.log('PASS PostgreSQL V57: full existing migrations, permissions/RLS/privacy, mixed intake results, normalized duplicate prevention, idempotency, authoritative freight/debt, real concurrent checkout, late-failure rollback, hidden parcel protection.');
 }finally{if(c)await c.end();await pg.stop();await rm(directory,{recursive:true,force:true});}

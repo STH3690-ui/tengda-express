@@ -31,5 +31,9 @@ with sync_playwright() as p:
  live=pg.evaluate('''async()=>{const f=document.getElementById("fixture").files[0],image=new Image(),url=URL.createObjectURL(f);try{await new Promise((ok,no)=>{image.onload=ok;image.onerror=no;image.src=url});const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);const r=await TDLabelOCR.recognizeCanvas(c),p=TDLiveV59.parse(r.text);return {text:r.text,name:p.name,phone:p.phone,eligible:p.eligible,evidence:tdV59Evidence(r,p)}}finally{URL.revokeObjectURL(url)}}''')
  print(json.dumps({'engine':engine,'real_v59_canvas_ocr':live},ensure_ascii=False))
  assert live['name']=='测试客户' and live['phone']=='09943253053' and live['eligible'],live
+ pg.locator('#fixture').set_input_files(str(ROOT/'tests/fixtures/v60-frozen-label.png'))
+ frozen=pg.evaluate('''async()=>{const f=document.getElementById("fixture").files[0],im=new Image(),url=URL.createObjectURL(f);try{await new Promise((ok,no)=>{im.onload=ok;im.onerror=no;im.src=url});const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);const r=await TDLabelOCR.recognizeFrozen(c),p=TDCaptureV60.parse(r.text);return {text:r.text,name:p.name,phone:p.phone,eligible:p.eligible,confidence:r.confidence}}finally{URL.revokeObjectURL(url)}}''')
+ print(json.dumps({'engine':engine,'real_v60_hd_frozen_ocr':frozen},ensure_ascii=False))
+ assert frozen['name']=='测试客户' and frozen['phone']=='09943253053' and frozen['eligible'],frozen
  pg.evaluate('TDLabelOCR.stop()');b.close()
 server.shutdown()
