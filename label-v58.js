@@ -22,7 +22,7 @@ function parseLabel(raw){
 }
 function matchCustomer(customers,parsed){
  if(!parsed.name||!parsed.phone||!Array.isArray(customers))return {status:'review',reason:'姓名、手机号不完整'};
- const samePhone=customers.filter(c=>!c.deleted_at&&clean(c.phone).replace(/[\\s-]/g,'')===parsed.phone);
+ const samePhone=customers.filter(c=>!c.deleted_at&&clean(c.phone).replace(/[\s-]/g,'')===parsed.phone);
  const exact=samePhone.filter(c=>clean(c.name)===parsed.name);
  if(exact.length===1&&samePhone.length===1)return {status:'matched',customer_id:exact[0].id};
  if(samePhone.length>0)return {status:'review',reason:'手机号对应多个客户或姓名不一致'};
