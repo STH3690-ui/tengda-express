@@ -70,3 +70,8 @@
 
 /label-manual-v621.js
   Cache-Control: no-cache
+
+/compact-ui-v622.js
+  Cache-Control: no-cache
+/compact-v622.css
+  Cache-Control: no-cache

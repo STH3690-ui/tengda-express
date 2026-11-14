@@ -22,12 +22,12 @@ with sync_playwright() as p:
  pg.wait_for_function('tdScan.ready');pg.evaluate('__workerStops=0')
  # V62 existing-customer selection, editable metadata and manual entry before any photo.
  pg.evaluate("""()=>{const old=db.rpc.bind(db);db.rpc=(name,args)=>name==='td_scan_customers_v57'?Promise.resolve({data:[{id:'selected-existing',name:'Existing Customer',phone:'09967676761'}]}):old(name,args)}""")
- pg.locator('#tdV62CustomerTerm').fill('099676');pg.get_by_role('button',name='搜索客户',exact=True).first.click();pg.locator('#tdV62Customers').get_by_role('button').click()
+ pg.locator('#tdV622CustomerPicker > summary').click();pg.locator('#tdV62CustomerTerm').fill('099676');pg.locator('#tdV62Customers').get_by_role('button').click()
  assert pg.locator('#tdLiveName').input_value()=='Existing Customer';assert pg.locator('#tdLivePhone').input_value()=='09967676761'
  pg.locator('#tdV62Pieces').fill('3');pg.locator('#tdV62Weight').fill('1.275');pg.locator('#tdV62Notes').fill('易碎，请轻放');pg.locator('#tdLiveManual').click();pg.wait_for_function("tdPhoto.phase==='success' && !tdLive.busy")
  manual=pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').at(-1).args.p_payload");assert manual['customer_id']=='selected-existing' and manual['pieces']==3 and manual['weight_kg']==1.275 and manual['notes']=='易碎，请轻放'
  pg.evaluate('tdV59Stop(true);__liveCalls=[];__beeps=0;__preloads=0;__workerStops=0')
- pg.locator('#tdLiveStart').click();pg.wait_for_function('tdLive.running');assert pg.locator('#tdLiveName').is_enabled();pg.wait_for_timeout(1500)
+ pg.locator('#tdPhotoShutter').click();pg.wait_for_function('tdLive.running');assert pg.locator('#tdLiveName').is_enabled();pg.wait_for_timeout(1500)
  assert pg.evaluate('__captureCalls')==0 # No auto capture regardless of time or scene.
  pg.locator('#tdPhotoShutter').click();pg.wait_for_function('__captureCalls===1')
  assert pg.locator('#tdCaptureFrozen').is_visible();assert not pg.locator('#tdLiveVideo').is_visible();assert pg.evaluate('__beeps===1')
@@ -50,13 +50,13 @@ with sync_playwright() as p:
  pg.locator('#tdLiveResolve').click();pg.wait_for_function("!tdLive.pending && tdPhoto.phase==='success' && !tdLive.busy")
  assert pg.locator('#tdLivePhone').input_value()=='09933333333'
  # Offline recognition must not write; image remains editable.
- pg.evaluate("__lost=false;__online=true;__text='地址: (王小明09944444444)'");pg.locator('#tdLiveStart').click();pg.wait_for_function('tdLive.running');pg.evaluate('__online=false');before=pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length");pg.locator('#tdPhotoShutter').click();pg.wait_for_function('!tdPhoto.processing && tdPhoto.phase==="review"');assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length")==before
+ pg.evaluate("__lost=false;__online=true;__text='地址: (王小明09944444444)'");pg.locator('#tdPhotoShutter').click();pg.wait_for_function('tdLive.running');pg.evaluate('__online=false');before=pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length");pg.locator('#tdPhotoShutter').click();pg.wait_for_function('!tdPhoto.processing && tdPhoto.phase==="review"');assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length")==before
  # Stop a held OCR, discard late response and release navigation interlock.
- pg.evaluate("__online=true;__hold=true");pg.locator('#tdLiveStart').click();pg.wait_for_function('tdLive.running');calls=pg.evaluate('__captureCalls');pg.locator('#tdPhotoShutter').click();pg.wait_for_function(f'__captureCalls==={calls+1}')
+ pg.evaluate("__online=true;__hold=true");pg.locator('#tdPhotoShutter').click();pg.wait_for_function('tdLive.running');calls=pg.evaluate('__captureCalls');pg.locator('#tdPhotoShutter').click();pg.wait_for_function(f'__captureCalls==={calls+1}')
  pg.evaluate('tdV59Stop()');assert pg.locator('#tdCaptureFrozen').is_visible();pg.evaluate('__hold=false;__releaseOCR()');pg.wait_for_function('!tdPhoto.processing && tdNav.pending===0');assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length")==before
  # Native HD still photo replaces provisional video crop before OCR.
  pg.evaluate("""()=>{__text='地址: (Aung Win09955555555)';tdLive.edited=false;const old=navigator.mediaDevices.getUserMedia;navigator.mediaDevices.getUserMedia=async opts=>{const stream=await old(opts);const track={enabled:true,stop(){__stops++},getCapabilities(){return {}}};stream.getVideoTracks=()=>[track];return stream};window.ImageCapture=class {takePhoto(){return new Promise(ok=>{window.__nativeRelease=()=>{const c=document.createElement('canvas');c.width=3200;c.height=2400;c.getContext('2d').fillRect(0,0,3200,2400);c.toBlob(ok,'image/jpeg')}})}}}""")
- pg.locator('#tdLiveStart').click();pg.wait_for_function('tdLive.running');base=pg.evaluate('__captureCalls');pg.locator('#tdPhotoShutter').click();pg.wait_for_function('!!window.__nativeRelease');assert pg.locator('#tdCaptureFrozen').is_visible();assert pg.evaluate('__captureCalls')==base
+ pg.locator('#tdPhotoShutter').click();pg.wait_for_function('tdLive.running');base=pg.evaluate('__captureCalls');pg.locator('#tdPhotoShutter').click();pg.wait_for_function('!!window.__nativeRelease');assert pg.locator('#tdCaptureFrozen').is_visible();assert pg.evaluate('__captureCalls')==base
  pg.evaluate('tdV61Shutter()');assert pg.evaluate('__captureCalls')==base
  pg.evaluate('__nativeRelease()');pg.wait_for_function("tdPhoto.phase==='success' && !tdLive.busy && !tdPhoto.processing")
  proof=pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').at(-1).args.p_payload");assert proof['source_kind']=='native_photo' and proof['source_width']==3200 and proof['source_height']==2400,{'proof':proof,'source':pg.evaluate('tdPhoto.source'), 'messages':pg.locator('#tdCaptureText').inner_text()}

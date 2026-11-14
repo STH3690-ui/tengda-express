@@ -55,7 +55,7 @@ with sync_playwright() as p:
  scan('NEW10001');scan('NEW10002');assert pg.evaluate('tdScan.rows.length')==2;assert pg.evaluate("tdScan.rows.every(x=>!x.customer_id)")
  scan('NEW10001');assert '重复' in pg.locator('#tdScanMessage').inner_text();assert pg.evaluate('tdScan.rows.length')==2
  for i in (0,1):
-  pg.locator('#tdScanCustomerTerm'+str(i)).fill('客户');pg.locator('.td-scan-row').nth(i).get_by_role('button',name='搜索客户',exact=True).click();pg.locator('#tdScanCustomers'+str(i)).get_by_role('button',name='测试客户',exact=True).click()
+  pg.locator('#tdScanCustomerTerm'+str(i)).fill('客户');pg.locator('#tdScanCustomers'+str(i)).get_by_role('button',name='测试客户',exact=True).click()
  pg.locator('.td-scan-row input[type=file]').first.set_input_files(str(ROOT/'icon-512.png'))
  pg.get_by_role('button',name='批量确认入库',exact=True).click();pg.wait_for_function('!tdScan.busy && tdScan.results.length===2');assert '成功 1 条，失败 1 条' in pg.locator('#tdScanMessage').inner_text();assert pg.evaluate('tdScan.rows.length')==1;assert '成功上传1张照片' in pg.locator('#tdScanResults').inner_text()
  go('scanPickup');scan('PICKED100');assert pg.evaluate('tdScan.rows.length')==0;scan('HIDDEN100');assert pg.evaluate('tdScan.rows.length')==0;scan('AMBIG100');assert pg.evaluate('tdScan.rows.length')==0
