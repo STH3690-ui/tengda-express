@@ -43,6 +43,7 @@ declare prior td_private.live_requests_v59;s uuid;n text;p text;k text;d text;m 
  s:=(p_payload->>'session_id')::uuid;d:=p_payload->>'label_digest';n:=td_private.label_name_v58(p_payload->>'name');p:=td_private.label_phone_v58(p_payload->>'phone');k:=md5(lower(regexp_replace(n,'[[:space:]]','','g'))||'|'||p);
  if s is null or d is null or d!~'^[a-f0-9]{64}$' then raise exception '缺少识别会话';end if;
  perform pg_advisory_xact_lock(hashtextextended('customer:'||k,5901));perform pg_advisory_xact_lock(hashtextextended('label:'||d,5901));
+ lock table public.td_customers in share row exclusive mode;
  m:=public.td_live_resolve_v59(n,p,d,s);
  if m->>'status'='review' then raise exception '%',m->>'reason';end if;
  if p_confirmed is distinct from true then
