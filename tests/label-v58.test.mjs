@@ -54,3 +54,9 @@ test('sorting code cannot stand in for missing waybill',()=>{
  const r=parseLabel('631-C10 789\n收件人: 安康\n手机号: 09943253053');
  assert.equal(r.eligible_for_auto_intake,false);
 });
+
+test('phone label 手机号 is recognized',()=>{
+ const r=parseLabel('运单号: 79045587905964\n收件人: 安康\n手机号: 09943253053');
+ assert.equal(r.phone,'09943253053');
+ assert.equal(r.eligible_for_auto_intake,true);
+});
