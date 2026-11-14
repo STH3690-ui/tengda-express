@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';import {randomUUID} from 'node:crypto';
 export async function run({c,pg,auth,rpc,owner,staff}){
- await c.query('reset role');await auth(c,owner);
+ await c.query('reset role');const legacy=(await c.query("select request_id,result from td_private.live_requests_v59 where actor=$1 and result ? 'parcel_id' limit 1",[owner])).rows[0];const oldPickup=(await c.query("select request_id from td_private.scan_requests_v57 where actor=$1 and operation='pickup' limit 1",[owner])).rows[0];await auth(c,owner);assert.equal((await rpc('td_intake_request_v62',[oldPickup.request_id])).operation,'pickup');const recoveredLegacy=await rpc('td_intake_request_v62',[legacy.request_id]);assert.equal(recoveredLegacy.parcel_id,legacy.result.parcel_id,'older photo recovery must return the photo result, not its nested scan batch');
  const p=(extra={})=>({name:'Unified Customer',phone:'09982828281',pieces:3,weight_kg:1.275,notes:'易碎，第二箱',...extra});
  const put=(payload,id=randomUUID(),confirmed=true,client=c)=>rpc('td_intake_v62',[id,JSON.stringify(payload),confirmed],client);
  const request=randomUUID(),r=await put(p(),request);assert.equal(r.version,62);assert.equal(r.parcel.pieces,3);assert.equal(r.parcel.remaining,3);assert.equal(Number(r.parcel.weight_kg),1.275);assert.equal(r.parcel.notes,'易碎，第二箱');assert.deepEqual(await put(p(),request),r);await assert.rejects(put(p({pieces:4}),request));
