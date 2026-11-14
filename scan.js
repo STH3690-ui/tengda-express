@@ -95,7 +95,7 @@ async function tdScanCheckout(e){
  if(!t.valid||!receiver)return tdScanMessage('请检查包裹、统一重量、单价、实收和取件人（重量最多3位小数，金额最多2位）',true);
  if(t.paid>0&&!tdScan.cap.finance)return tdScanMessage('没有登记收款权限，请联系管理员',true);
  if(!confirm('确认收款并完成取件？\n'+t.pieces+'件，'+t.weight+'kg\n应收 '+money(t.freight)+' MMK\n实收 '+money(t.paid)+' MMK\n欠款 '+money(t.due)+' MMK'))return;
- const payload={customer_id:tdScan.rows[0].customer_id,items:tdScan.rows.map(r=>({parcel_id:r.id,pieces:Number(r.remaining)})),weight:t.weight,rate:t.rate,paid:t.paid,method:t.paid===0?'赊账':$('tdScanMethod').value,name:receiver,phone:$('tdScanPhone').value,notes:$('tdScanNotes').value};const request=tdScanBegin('pickup',payload);tdScanSetBusy(true);
+ const payload={customer_id:tdScan.rows[0].customer_id,items:tdScan.rows.map(r=>({parcel_id:r.id,pieces:Number(r.remaining)})),weight:t.weight,rate:t.rate,paid:t.paid,method:$('tdScanMethod').value,name:receiver,phone:$('tdScanPhone').value,notes:$('tdScanNotes').value};const request=tdScanBegin('pickup',payload);tdScanSetBusy(true);
  try{const r=await tdScanRpc('td_scan_checkout_v57',{p_request:request.id,p_payload:payload,p_confirmed:true});tdScan.results=[r];tdScan.rows=[];tdScanEnd();tdScanRenderRows();tdScanShowResults();$('tdScanCheckoutForm').reset();if($('tdScanWeight'))delete $('tdScanWeight').dataset.reweighed;tdCaptureBaseline();try{await refresh()}catch{}tdScanMessage('结算成功，取件和原财务账目已在同一事务完成');}
  catch(e){tdScan.uncertain=true;tdScanMessage('结算结果待核实：'+e.message+'。不要重复收款，请核实上次请求。',true);tdScanAddRecovery()}finally{tdScanSetBusy(false)}
 }
