@@ -1,0 +1,22 @@
+name: V58 validation
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: |
+          node --check label-v58.js
+          node --check scan.js
+          node --check tests/label-v58.test.mjs
+      - name: Label regression tests
+        run: node --test tests/label-v58.test.mjs

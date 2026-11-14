@@ -7,6 +7,7 @@ permissions:
   contents: read
 jobs:
   cleanup-security-test:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,6 +19,7 @@ jobs:
       - run: npm run check
 
   existing-suite:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,19 +29,24 @@ jobs:
       - run: npm test
 
   navigation-browser:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install playwright==1.62.0
+      - run: pip install playwright==1.62.0 pillow==13.0.0
       - run: python -m playwright install --with-deps chromium webkit
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       - run: npm ci
       - run: node scripts/generate-scan-fixtures.mjs
+      - run: python tests/browser_v58.py
+      - run: TD_BROWSER_ENGINE=webkit python tests/browser_v58.py
+      - run: python tests/browser_v58_ocr.py
+      - run: TD_BROWSER_ENGINE=webkit python tests/browser_v58_ocr.py
       - run: python tests/browser_scan.py
       - run: TD_BROWSER_ENGINE=webkit python tests/browser_scan.py
       - run: python tests/browser_navigation.py
@@ -49,6 +56,7 @@ jobs:
       - run: python tests/browser_staff_delete.py
 
   scan-database:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,5 +64,5 @@ jobs:
         with:
           node-version: 24
       - run: npm ci
-      - run: node scripts/test-scan-db.mjs
+      - run: TD_TEST_V58=1 timeout 120s node scripts/test-scan-db.mjs
       - run: node scripts/build-static.mjs
