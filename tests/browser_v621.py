@@ -27,14 +27,14 @@ with sync_playwright() as p:
  pg.locator('.td-live-launch').click();panel();pg.evaluate('tdNavigate("home")');pg.locator('[data-route="scan"]').click();pg.locator('[data-route="scanIntake"]').click();panel()
  # All three fields are visible before any capture, scan or recognized text.
  pg.locator('#tdV58PreviewPanel').screenshot(path='/tmp/v621-legacy-'+engine+'.png')
- pg.locator('#tdV621CustomerTerm').fill('099222');pg.locator('#tdV621CustomerSearch').click();pg.locator('#tdV621Customers button').click();assert pg.locator('#tdV621Name').input_value()=='Existing Client';assert pg.locator('#tdV621Phone').input_value()=='09922223333'
+ pg.locator('#tdV621CustomerTerm').fill('099222');pg.locator('#tdV621Customers button').click();assert pg.locator('#tdV621Name').input_value()=='Existing Client';assert pg.locator('#tdV621Phone').input_value()=='09922223333'
  pg.locator('#tdV58Pieces').fill('3');pg.locator('#tdV58Weight').fill('1.275');assert pg.locator('#tdV58Commit').is_enabled();pg.locator('#tdV58Commit').click();pg.wait_for_function('!tdLabel.busy && !tdLabel.pending')
  first=pg.evaluate("__calls.find(x=>x.name==='td_intake_v62').args");assert first['p_confirmed'] is True;assert first['p_payload']['customer_id']=='existing-client' and first['p_payload']['pieces']==3 and first['p_payload']['weight_kg']==1.275 and first['p_payload']['tracking_no']=='';assert pg.evaluate('__ocr')==0
  # Manual customer data and optional photo save work even when OCR is turned OFF.
  pg.locator('#tdV621Name').fill('Manual Client');pg.locator('#tdV621Phone').fill('09933334444');pg.locator('#tdV621OCR').uncheck();pg.locator('#tdV58Photo').set_input_files(str(ROOT/'icon-512.png'));pg.locator('#tdV58Weight').fill('');pg.locator('#tdV58Commit').click();pg.wait_for_function('__uploads.length===1 && !tdLabel.busy');assert pg.evaluate('__ocr')==0
  second=pg.evaluate("__calls.filter(x=>x.name==='td_intake_v62').at(-1).args.p_payload");assert second['customer_id'] is None and second['name']=='Manual Client' and second['weight_kg']==0;assert pg.locator('#tdV58Upload').is_checked()
  # Editing an existing choice clears its ID so authoritative rematching handles conflicts.
- pg.locator('#tdV621CustomerTerm').fill('Existing');pg.locator('#tdV621CustomerSearch').click();pg.locator('#tdV621Customers button').click();pg.locator('#tdV621Name').fill('Changed Name');assert pg.evaluate('tdV621.selected===null')
+ pg.locator('#tdV621CustomerTerm').fill('Existing');pg.locator('#tdV621Customers button').click();pg.locator('#tdV621Name').fill('Changed Name');assert pg.evaluate('tdV621.selected===null')
  pg.evaluate('__online=false');n=pg.evaluate("__calls.filter(x=>x.name==='td_intake_v62').length");pg.locator('#tdV58Commit').click();assert pg.evaluate("__calls.filter(x=>x.name==='td_intake_v62').length")==n
  # Pending/lost response blocks repeat and barcode writes; resolving returns original success.
  pg.evaluate('__online=true;__lost=true');pg.locator('#tdV58Commit').click();pg.wait_for_function('tdLabel.pending && !tdLabel.busy');n=pg.evaluate("__calls.filter(x=>x.name==='td_intake_v62').length");pg.evaluate("tdV58Commit(false);tdScanAccept('NEW99999','hid')");assert pg.evaluate("__calls.filter(x=>x.name==='td_intake_v62').length")==n;assert pg.evaluate('tdScan.rows.length')==0

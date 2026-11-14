@@ -1,0 +1,30 @@
+/* Scope only the intake screen; other page layouts and forms retain their styles. */
+body[data-td-page=scanIntake]:has(#app:not(.hidden)){background:#0d0f12!important;color:#f2deb4}
+body[data-td-page=scanIntake]:has(#app:not(.hidden))>header,body[data-td-page=scanIntake]:has(#app:not(.hidden)) footer,body[data-td-page=scanIntake] #app>.td-session-actions{display:none!important}
+body[data-td-page=scanIntake] #app{max-width:520px;margin:0 auto;padding:0 10px max(12px,env(safe-area-inset-bottom))}
+body[data-td-page=scanIntake] #page{margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#0d0f12!important}
+body[data-td-page=scanIntake] #page .td-compact-top{display:grid!important;grid-template-columns:44px 1fr 44px;align-items:center;position:relative!important;top:auto!important;gap:0;margin:0!important;padding:env(safe-area-inset-top) 0 4px!important;border:0!important;background:#0d0f12!important;box-shadow:none!important}
+body[data-td-page=scanIntake] #page .td-compact-top h1{font-size:18px!important;line-height:44px;margin:0;text-align:center;color:#eed09a;letter-spacing:1px}
+body[data-td-page=scanIntake] #page .td-icon-button{display:grid!important;place-items:center;width:44px!important;height:44px!important;min-height:44px!important;padding:10px!important;margin:0!important;border:0!important;background:transparent!important;color:#dfb76e!important;border-radius:10px!important;box-shadow:none!important;flex:none!important}
+.td-icon-button svg{width:24px;height:24px}.td-icon-button[aria-pressed=true]{color:#ffe09a!important;filter:drop-shadow(0 0 4px #dcb569)}
+body[data-td-page=scanIntake] #page #tdLivePanel.td-compact{display:grid;gap:9px;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important}
+body[data-td-page=scanIntake] #page #tdLivePanel[hidden]{display:none!important}
+body[data-td-page=scanIntake] #page .td-compact .td-live-camera{height:clamp(132px,24svh,190px)!important;aspect-ratio:auto!important;min-height:0!important;max-height:190px!important;border:0!important;border-radius:12px;background:#050608!important;overflow:hidden}
+.td-compact #tdV622CameraHint{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;color:#bca984;font-size:12px}.td-compact #tdV622CameraHint[hidden]{display:none!important}
+.td-compact #tdPhotoGuide{inset:15% 5%;border-width:1.5px;border-radius:8px}.td-compact #tdCaptureFrozen{height:100%!important;max-height:100%!important;object-fit:contain}
+.td-compact-camera-actions{display:grid;grid-template-columns:1fr 80px 1fr;align-items:center;justify-items:center;gap:8px;height:66px}
+body[data-td-page=scanIntake] #page .td-compact button.td-shutter{width:64px!important;height:64px!important;min-width:64px!important;min-height:64px!important;max-width:64px!important;padding:5px!important;border:2px solid #dfb76e!important;border-radius:50%!important;background:#0d0f12!important;margin:0!important}
+.td-compact .td-shutter span{width:48px;height:48px;background:#ebcd94;box-shadow:none}
+.td-compact-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+body[data-td-page=scanIntake] #page .td-compact label{display:block;margin:0!important;color:#ceb588;font-size:12px;line-height:18px;min-width:0}
+body[data-td-page=scanIntake] #page .td-compact input:not([type=file]){display:block;width:100%;height:42px!important;min-height:42px!important;padding:8px 10px!important;margin:0!important;border:1px solid #51432d!important;border-radius:9px!important;background:#17191e!important;color:#f7e8cd!important;font-size:16px!important;line-height:24px;box-shadow:none!important}
+.td-customer-picker{position:relative;margin:0!important;min-width:0}.td-customer-picker summary{display:flex;align-items:center;justify-content:space-between;list-style:none;min-height:44px;padding:9px 11px;border:1px solid #51432d;border-radius:9px;color:#e5c58c;font-size:14px;cursor:pointer}.td-customer-picker summary::-webkit-details-marker{display:none}#tdV622CustomerLabel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.td-customer-popover{position:absolute;top:100%;left:0;right:0;z-index:20;background:#17191e;padding:8px;border:1px solid #796039;border-radius:9px;box-shadow:0 10px 28px #000a}.td-compact #tdV62Customers{display:flex;flex-direction:column;max-height:180px;overflow:auto;gap:4px;margin:5px 0 0}.td-compact #tdV62Customers:empty{margin:0}.td-compact #tdV62Customers button{text-align:left;padding:9px!important;min-height:44px!important}
+body[data-td-page=scanIntake] #page .td-compact .td-compact-confirm{height:46px!important;min-height:46px!important;width:100%;padding:10px!important;margin:0!important;background:linear-gradient(115deg,#dfb86e,#c99b47)!important;border:0!important;border-radius:9px!important;color:#18130b!important;font-size:16px;font-weight:700;box-shadow:none!important}
+body[data-td-page=scanIntake] #page .td-compact #tdLiveStatus{font-size:12px;line-height:18px;color:#d9c5a1;margin:0!important;overflow-wrap:anywhere}#tdLiveStatus:empty{display:none}
+body[data-td-page=scanIntake] #page #tdV622Advanced,body[data-td-page=scanIntake] #page #tdV59Legacy{margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;font-size:12px;color:#baa781}
+#tdV622Advanced>summary,#tdV59Legacy>summary{display:flex;align-items:center;min-height:44px!important;padding:6px 2px!important;cursor:pointer;font-size:12px!important;color:#bda779!important}
+.td-compact-advanced{display:flex;flex-wrap:wrap;gap:8px}.td-compact-advanced small,.td-compact-advanced pre,.td-compact-advanced ol{width:100%;margin:0}.td-compact-advanced pre{max-height:180px;overflow:auto;white-space:pre-wrap}.td-compact-advanced button{min-height:44px}
+@media(min-width:600px){body[data-td-page=scanIntake] #app{padding-top:10px}}
+
+body[data-td-page=scanIntake] #tdPageContent:has(#tdV59Legacy[open]) #tdLivePanel{display:none!important}
