@@ -3,7 +3,7 @@
 const TD_SCAN_PAGES=['scan','scanIntake','scanQuery','scanPickup','scanHistory'];
 const tdScan={rows:[],query:[],results:[],cap:null,ready:false,loading:false,busy:false,queue:Promise.resolve(),queued:0,stream:null,reader:null,cameraToken:0,cameras:[],device:'',torch:false,lastCode:'',lastAt:0,request:null,uncertain:false,photos:[],audio:null,history:[]};
 function tdScanIsPage(){return TD_SCAN_PAGES.includes(page)}
-function tdScanDirty(){return tdScanIsPage()&&(tdScan.rows.length>0||tdScan.uncertain||!!(typeof tdLabel!=='undefined'&&(tdLabel.file||tdLabel.pending)))}
+function tdScanDirty(){return tdScanIsPage()&&(tdScan.rows.length>0||tdScan.uncertain||!!(typeof tdLabel!=='undefined'&&(tdLabel.file||tdLabel.pending||$('tdV58Text')?.value.trim())))}
 function tdScanMessage(text,error=false){const box=$('tdScanMessage');if(box){box.textContent=text;box.classList.toggle('error',error)}else notify(text,error)}
 function tdScanMode(){return page==='scanIntake'?'intake':page==='scanPickup'?'pickup':'query'}
 function tdScanAvailable(mode){return tdScan.ready&&(!['intake','pickup'].includes(mode)||tdScan.cap?.[mode]===true)}

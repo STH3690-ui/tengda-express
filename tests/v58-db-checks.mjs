@@ -40,6 +40,12 @@ export async function run({c,pg,auth,rpc,owner,staff}){
  await c.query('drop trigger test_label_fail on td_scan_events_v57');
  await auth(c,staff);await assert.rejects(intake(payload('LABELDENIED1')));await assert.rejects(rpc('td_label_resolve_v58',[p.name,p.phone,'LABELDENIED1']));assert.equal(await rpc('td_label_request_v58',[id]),null);
  await assert.rejects(c.query('select * from td_private.label_requests_v58'));await assert.rejects(c.query("select td_private.label_phone_v58('09943253053')"));
+ await c.query('reset role');await auth(c,owner);await c.query('reset role');
+ await c.query(`update td_members set permissions='{"parcel_create":true,"customer_edit":true}' where id=$1`,[staff]);await auth(c,staff);
+ const restricted=await intake(payload('LABELRESTRICT1'));assert.equal(restricted.customer_created,false);
+ await assert.rejects(intake(payload('LABELRESTRICT2','Create Denied Customer','09944444444')));
+ await assert.rejects(rpc('td_parcel_edit_v58',[randomUUID(),restricted.parcel_id,'{}',JSON.stringify(changes),true]));
+ await c.query('reset role');await auth(c,owner);await c.query('reset role');await c.query('update td_members set active=false where id=$1',[staff]);await auth(c,staff);await assert.rejects(rpc('td_label_capabilities_v58',[]));
  await c.query('reset role');await c.query('set role anon');await assert.rejects(rpc('td_label_capabilities_v58',[]));await c.query('reset role');await auth(c);
  console.log('PASS V58 database: authoritative matching/conflicts, atomic creation, duplicate and idempotent requests, independent concurrent intake, OCR confirmation gates, edits/concurrency/immutable ledger, batch pickup/debt, failure rollback, anonymous/staff/private isolation.');
 }
