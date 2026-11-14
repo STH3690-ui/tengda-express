@@ -51,7 +51,7 @@ with sync_playwright() as p:
  pg.locator('#tdLiveStart').click();pg.wait_for_function('tdLive.running');base=pg.evaluate('__captureCalls');pg.locator('#tdPhotoShutter').click();pg.wait_for_function('!!window.__nativeRelease');assert pg.locator('#tdCaptureFrozen').is_visible();assert pg.evaluate('__captureCalls')==base
  pg.evaluate('tdV61Shutter()');assert pg.evaluate('__captureCalls')==base
  pg.evaluate('__nativeRelease()');pg.wait_for_function("tdPhoto.phase==='success' && !tdLive.busy && !tdPhoto.processing")
- proof=pg.evaluate("__liveCalls.filter(x=>x.name==='td_photo_intake_v61').at(-1).args.p_payload");assert proof['source_kind']=='native_photo' and proof['source_width']==3200 and proof['source_height']==2400
+ proof=pg.evaluate("__liveCalls.filter(x=>x.name==='td_photo_intake_v61').at(-1).args.p_payload");assert proof['source_kind']=='native_photo' and proof['source_width']==3200 and proof['source_height']==2400,{'proof':proof,'source':pg.evaluate('tdPhoto.source'), 'messages':pg.locator('#tdCaptureText').inner_text()}
  pg.wait_for_function("tdPhoto.phase==='preview'")
  # Low resolution original video cannot silently submit thumbnail OCR.
  pg.evaluate("()=>{window.ImageCapture=undefined;__vw=640;__vh=480;window.__nativeAsked=0;tdV61Native=()=>{__nativeAsked++}}");base=pg.evaluate('__captureCalls');pg.locator('#tdPhotoShutter').click();assert pg.evaluate('__nativeAsked')==1,pg.evaluate('({phase:tdPhoto.phase,running:tdLive.running,can:tdV61CanStart(),w:$("tdLiveVideo").videoWidth,pending:tdLive.pending,processing:tdPhoto.processing,status:$("tdLiveStatus").textContent})');assert pg.evaluate('__captureCalls')==base
