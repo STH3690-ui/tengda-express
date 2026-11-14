@@ -1,4 +1,4 @@
-import { readFile, mkdir, copyFile, rm, cp } from 'node:fs/promises';
+import { readFile, mkdir, copyFile, rm, cp, writeFile } from 'node:fs/promises';
 const html=await readFile('index.html','utf8');
 if(!html.includes("const TD_SUPABASE_URL='https://yvsgawbbnyeyvynwghsc.supabase.co'"))throw new Error('Production project binding is required');
 if(html.includes('amknufvdvqfhrgtobpwg'))throw new Error('Test project reference in production HTML');
@@ -13,3 +13,7 @@ await mkdir('dist/.well-known',{recursive:true});await copyFile('.well-known/ass
 console.log('Production static bundle built; server source, backups and test files excluded.');
 
 await cp('vendor/tesseract-v6','dist/vendor/tesseract-v6',{recursive:true});
+
+const commit=(process.env.COMMIT_REF||'').trim();
+if(commit&&!/^[a-f0-9]{40}$/i.test(commit))throw Error('Invalid release commit');
+await writeFile('dist/release.json',JSON.stringify({version:'V58',commit:commit||null})+'\n');

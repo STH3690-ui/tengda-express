@@ -33,3 +33,7 @@
   Cache-Control: no-cache
 /vendor/tesseract-v6/*.wasm
   Content-Type: application/wasm
+
+/release.json
+  Cache-Control: no-store
+  Content-Type: application/json; charset=utf-8

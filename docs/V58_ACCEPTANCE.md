@@ -29,7 +29,7 @@ The hosted test-project exercise creates synthetic Auth/member/customer/parcel/p
 
 ## Production execution gates
 
-Do not merge/deploy the release until current official database backup completion/status and recoverable window are verified, recovery readiness is established, private Storage photos have a separate verified backup, the precise authorized test-record IDs and their relations have a private backup, and real-device acceptance is complete. A backup list is not a successful restore rehearsal. No key belongs in logs, reports or this repository.
+Do not merge/deploy the release until current official database backup completion/status and recoverable window are verified, recovery readiness is established, any photos required to be retained have their agreed protection, the precise authorized test-record IDs and their relations have a private backup, and any unperformed real-device checks are explicitly reported. The operator waived a separate backup for the four old photos; do not delete cloud photos or infer that this waives database recovery readiness. A backup list is not a successful restore rehearsal. No key belongs in logs, reports or this repository.
 
 Once all gates pass, run only `20261114030303_v58_label_atomic_intake.sql` through the migration mechanism against the verified project. It is a single transaction with bounded lock/statement timeouts; old migrations are never rerun. An injected pre-commit failure must leave no V58 objects. Re-running the raw migration intentionally fails without replacing existing objects; the migration-history mechanism applies it once.
 
