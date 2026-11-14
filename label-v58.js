@@ -8,7 +8,7 @@ function parseLabel(raw){
  const codes=[...text.matchAll(/(?:运单号|快递单号|单号|waybill|tracking)\s*[:：#]?\s*([A-Z0-9-]{8,40})/gi)].map(m=>m[1].toUpperCase());
  const numeric=lines.filter(x=>/^\d{12,20}$/.test(x) && !phoneMatchesPlaceholder(x));
  const tracking=[...new Set([...codes,...numeric])];
- const phoneMatches=[...text.matchAll(/(?:电话|手机|联系电话|收件电话|tel|phone)\s*[:：]?\s*(\+?\d[\d\s-]{6,20})/gi)].map(m=>m[1].replace(/[\s-]/g,''));
+ const phoneMatches=[...text.matchAll(/(?:收件电话|联系电话|手机号|手机|电话|tel|phone)\s*[:：]?\s*(\+?\d[\d\s-]{6,20})/gi)].map(m=>m[1].replace(/[\s-]/g,''));
  const names=[...text.matchAll(/(?:收件人|收货人|客户姓名|姓名)\s*[:：]\s*([^\n,，]{1,35})/g)].map(m=>clean(m[1]));
  const phone=[...new Set(phoneMatches)].filter(x=>/^\+?\d{8,15}$/.test(x));
  const name=[...new Set(names)].filter(x=>x.length>=2&&x.length<=30);
