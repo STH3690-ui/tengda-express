@@ -10,7 +10,8 @@ export async function run({c,pg,auth,rpc,owner,staff}){
  await c.query('reset role');const parcel=(await c.query('select pieces,remaining,weight_kg from td_parcels where id=$1',[r.parcel_id])).rows[0];assert.equal(parcel.pieces,1);assert.equal(Number(parcel.weight_kg),0);await auth(c);
  await assert.rejects(intake(p));await assert.rejects(intake(payload('Live Customer','09955555555','different parcel')));
  assert.equal((await rpc('td_live_resolve_v59',[p.name,p.phone,p.label_digest,session])).needs_distinct_confirmation,true);
- const r2=await intake(payload('Live Customer','09955555555','different parcel'),randomUUID(),true);assert.equal(r2.customer_id,r.customer_id);
+ assert.equal((await rpc('td_live_resolve_v59',['LIVE   CUSTOMER',p.phone,p.label_digest,session])).status,'matched');
+ const r2=await intake(payload('LIVE CUSTOMER','09955555555','different parcel'),randomUUID(),true);assert.equal(r2.customer_id,r.customer_id);
  for(const bad of [{confidence:94},{stable_frames:2},{min_confidence:89},{confidence:100.01}])await assert.rejects(intake({...payload('Other Live Customer','09966666666','bad'),...bad}));
  await assert.rejects(intake(payload('Hidden Phone','099****9999')));await assert.rejects(intake(payload('Live Customer','09977777777')));
  const fence=randomUUID();assert.equal(await rpc('td_live_request_v59',[fence]),null);await assert.rejects(intake(payload('Fence Customer','09988888888','fenced'),fence));
