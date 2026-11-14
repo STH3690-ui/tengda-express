@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';import {route} from '../netlify/lib/supabase-proxy.mjs';
+const ctx={};vm.runInNewContext(readFileSync('intake-core-v62.js','utf8'),ctx);const {fields,weight}=ctx.TDIntakeV62;
+test('intake defaults and decimal total weight and notes',()=>{assert.equal(fields().pieces,1);assert.equal(fields().weight_kg,0);assert.equal(fields('3','1.275','易碎').notes,'易碎');assert.equal(fields('3','1.275').weight_kg,1.275)});
+for(const [p,w] of [['0','1'],['1.1','1'],['','1'],['1','-1'],['1','NaN'],['1','1.0001'],['1','1000000']])test('reject invalid intake '+p+'/'+w,()=>assert.throws(()=>fields(p,w)));
+test('registered weight is apportioned once across remaining pieces',()=>{assert.equal(weight([{pieces:3,remaining:2,weight_kg:1.275},{pieces:1,remaining:1,weight_kg:0.5}]),1.35);assert.equal(weight([{pieces:1,remaining:1,weight_kg:0}]),0)});
+test('new RPC allowlist and private requests isolation',()=>{for(const name of ['td_intake_v62','td_intake_batch_v62','td_intake_request_v62'])assert.equal(route('/api/supabase/rest/v1/rpc/'+name,'POST',new URLSearchParams()),true);assert.equal(route('/api/supabase/rest/v1/intake_requests_v62','GET',new URLSearchParams()),false)});

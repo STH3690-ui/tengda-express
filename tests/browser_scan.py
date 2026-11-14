@@ -8,13 +8,13 @@ STUB=next(ast.literal_eval(n.value) for n in tree.body if isinstance(n,ast.Assig
 MOCK=r'''window.__online=true;Object.defineProperty(navigator,'onLine',{get:()=>window.__online,configurable:true});
 window.__scanCalls=[];window.__requests={};window.__gumCalls=[];
 window.__scanParcel=(code,customer='c',status='pending')=>({id:code,tracking_no:code,customer_id:customer,customer_name:customer==='c'?'测试客户':'其他客户',pieces:2,remaining:status==='picked'?0:2,weight_kg:1.5,category:'普通包裹',arrived_at:'2026-11-13T01:00:00Z',status,pickups:status==='picked'?[{id:'b1',pieces:2,picked_at:'2026-11-13T02:00:00Z'}]:[]});
-window.__installScan=()=>{const original=db.rpc.bind(db);const handler=async(name,args)=>{if(!name.startsWith('td_scan_'))return original(name,args);window.__scanCalls.push({name,args});
+window.__installScan=()=>{const original=db.rpc.bind(db);const handler=async(name,args)=>{if(!(name.startsWith('td_scan_')||name.startsWith('td_intake_')))return original(name,args);window.__scanCalls.push({name,args});
  if(name==='td_scan_capabilities_v57')return {data:window.__missing?null:{version:57,intake:true,pickup:true,finance:true},error:window.__missing?{message:'RPC missing'}:null};
  if(name==='td_scan_lookup_v57'){const code=args.p_tracking;return {data:code.startsWith('NEW')?[]:code==='AMBIG100'?[__scanParcel(code),__scanParcel(code,'other')]:[__scanParcel(code,code==='OTHER100'?'other':'c',code==='PICKED100'?'picked':code==='HIDDEN100'?'deleted':'pending')]};}
  if(name==='td_scan_customers_v57')return {data:[{id:'c',name:'测试客户',phone:''},{id:'other',name:'其他客户',phone:''}]};
- if(name==='td_scan_intake_v57'){const out=args.p_items.map((x,i)=>({index:i,tracking_no:x.tracking_no,success:i===0,parcel_id:i===0?'saved-id':null,error:i===1?'模拟逐条失败':''}));__requests[args.p_request]={operation:'intake',result:out};return {data:out};}
+ if(name==='td_intake_batch_v62'){const out=args.p_items.map((x,i)=>({index:i,tracking_no:x.tracking_no,success:i===0,parcel_id:i===0?'saved-id':null,error:i===1?'模拟逐条失败':''}));__requests[args.p_request]={operation:'intake',result:out};return {data:out};}
  if(name==='td_scan_checkout_v57'){if(window.__holdCheckout)await new Promise(r=>window.__releaseCheckout=r);const out={success:true,batch_id:'settled-batch'};__requests[args.p_request]={operation:'pickup',result:out};if(window.__timeout)return {error:{message:'Network response lost'}};return {data:out};}
- if(name==='td_scan_request_v57')return {data:__requests[args.p_request]||null};return {data:null};};db.rpc=(name,args)=>name.startsWith('td_scan_')?handler(name,args):original(name,args);uploadPhotos=async()=> '成功上传1张照片';};
+ if(name==='td_intake_request_v62')return {data:__requests[args.p_request]||null};return {data:null};};db.rpc=(name,args)=>(name.startsWith('td_scan_')||name.startsWith('td_intake_'))?handler(name,args):original(name,args);uploadPhotos=async()=> '成功上传1张照片';};
 '''
 with sync_playwright() as p:
  engine=os.environ.get('TD_BROWSER_ENGINE','chromium');options={'executable_path':shutil.which('chromium'),'args':['--no-sandbox']} if engine=='chromium' else {}

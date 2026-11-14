@@ -60,3 +60,10 @@
   Cache-Control: no-cache
 /photo-v61.css
   Cache-Control: no-cache
+
+/intake-core-v62.js
+  Cache-Control: no-cache
+/intake-ui-v62.js
+  Cache-Control: no-cache
+/intake-v62.css
+  Cache-Control: no-cache

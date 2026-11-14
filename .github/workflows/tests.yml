@@ -44,8 +44,8 @@ jobs:
       - run: npm ci
       - run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
       - run: node scripts/generate-scan-fixtures.mjs
-      - run: python tests/browser_v61.py
-      - run: TD_BROWSER_ENGINE=webkit python tests/browser_v61.py
+      - run: python tests/browser_v62.py
+      - run: TD_BROWSER_ENGINE=webkit python tests/browser_v62.py
       - run: python tests/browser_v58.py
       - run: TD_BROWSER_ENGINE=webkit python tests/browser_v58.py
       - run: timeout 240s python tests/browser_v61_ocr.py
@@ -69,5 +69,5 @@ jobs:
         with:
           node-version: 24
       - run: npm ci
-      - run: TD_TEST_V58=1 TD_TEST_V59=1 TD_TEST_V60=1 TD_TEST_V61=1 timeout 120s node scripts/test-scan-db.mjs
+      - run: TD_TEST_V58=1 TD_TEST_V59=1 TD_TEST_V60=1 TD_TEST_V61=1 TD_TEST_V62=1 timeout 120s node scripts/test-scan-db.mjs
       - run: node scripts/build-static.mjs
