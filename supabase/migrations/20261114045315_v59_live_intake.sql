@@ -43,7 +43,7 @@ declare prior td_private.live_requests_v59;s uuid;n text;p text;k text;d text;m 
  end if;
  number:='TD59'||replace(p_request::text,'-','');
  r:=public.td_label_intake_v58(p_request,jsonb_build_object('name',n,'phone',p,'tracking_no',number,'pieces',1,'weight_kg',0,'allow_create',true),true);
- r:=r||jsonb_build_object('version',59,'parcel_number',number);
+ r:=r||jsonb_build_object('version',59,'parcel_number',number,'parcel',(select to_jsonb(x) from public.td_parcels x where x.id=(r->>'parcel_id')::uuid),'customer',jsonb_build_object('id',r->>'customer_id','name',n,'phone',p,'deleted_at',null));
  insert into td_private.live_requests_v59 values(p_request,auth.uid(),s,k,d,p_payload,r,now());return r;
 end$$;
 create function public.td_live_request_v59(p_request uuid) returns jsonb language plpgsql security definer set search_path='' as $$declare r jsonb;begin
