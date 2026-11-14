@@ -6,7 +6,7 @@ tdV59Stop=function(reset=false){tdV60OldStop(reset);if(tdCapture.job?.pending){t
 function tdV60Controls(){const start=$('tdLiveStart'),manual=$('tdLiveManual');if(start){start.disabled=tdLive.running||tdCapture.state==='watching'||tdLive.busy||!!tdLive.pending||tdCapture.processing;start.textContent=tdCapture.state==='success'?'扫描下一件':tdCapture.image?'重新扫描':'开启后置摄像头'}if(manual)manual.disabled=tdLive.running||tdCapture.state==='watching'||tdLive.busy||tdCapture.processing||tdCapture.state==='success'||!!tdLive.pending;for(const id of ['tdLiveName','tdLivePhone'])if($(id))$(id).disabled=tdLive.running||tdCapture.state==='watching'||tdLive.busy||tdCapture.processing||tdCapture.state==='success';}
 tdV59Edited=function(){tdLive.edited=true;tdLive.candidate=null;tdV59Message('请对照冻结图片核对姓名和完整号码，再手动确认入库')};
 tdV59Start=async function(){
- if(page!=='scanIntake'||tdCapture.processing||tdLive.busy||tdLive.pending||tdLabel.busy||tdLabel.pending||tdScan.busy||tdScan.uncertain||tdScan.rows.length||tdLabel.file||$('tdV58Text')?.value.trim())return tdV59Message('先完成或核实当前入库请求');
+ if(page!=='scanIntake'||tdCapture.processing||tdLive.busy||tdLive.pending||tdLabel.busy||tdLabel.pending||tdScan.busy||tdScan.uncertain||tdScan.queued>0||tdScan.rows.length||tdLabel.file||$('tdV58Text')?.value.trim())return tdV59Message('先完成或核实当前入库请求');
  if(tdCapture.state!=='success'&&tdLive.edited&&!confirm('放弃当前冻结图片及修改，重新扫描？'))return;
  tdV59Stop();tdScanStop();tdLive.edited=false;tdLive.candidate=null;tdCapture.image=null;tdCapture.quality=null;tdCapture.state='watching';const epoch=tdLive.epoch,actor=user?.id;
  $('tdCaptureFrozen').hidden=true;$('tdCaptureFrozen').width=$('tdCaptureFrozen').height=1;$('tdLiveVideo').hidden=false;$('tdCaptureGuide').hidden=false;$('tdLiveName').value=$('tdLivePhone').value='';$('tdCaptureText').textContent='';if($('tdV59Legacy'))$('tdV59Legacy').open=false;tdV60Controls();
@@ -46,6 +46,7 @@ async function tdV60Freeze(v,box,epoch){
 }
 tdV59Commit=async function(manual=false){
  if(page!=='scanIntake'||tdCapture.state==='success'||tdCapture.processing||tdLive.running||tdLive.busy||tdLive.pending||tdLabel.busy||tdLabel.pending||tdScan.busy||tdScan.uncertain||!navigator.onLine)return tdV59Message('请先冻结图片，或等待/核实当前请求');
+ if(tdScan.rows.length||tdScan.queued>0)return tdV59Message('请先完成或清空传统条码清单，再确认冻结入库');tdScanStop();
  const name=TDLabelV58.clean($('tdLiveName').value),phone=TDLabelV58.normalizePhone($('tdLivePhone').value),p=tdLive.candidate,epoch=tdLive.epoch,actor=user?.id;
  if(!name||!phone)return tdV59Message('请补全客户姓名和完整手机号');
  if(!manual&&(!tdCapture.image||!p?.eligible||tdLive.edited||p.name!==name||p.phone!==phone))return;

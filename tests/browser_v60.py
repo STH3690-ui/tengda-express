@@ -31,7 +31,7 @@ with sync_playwright() as p:
  # Next is an explicit action. Failed recognition keeps the same frozen image for editing.
  pg.evaluate("__text='地址: (李明138****8000)'");pg.locator('#tdLiveStart').click();pg.wait_for_function("tdCapture.state==='review' && !tdCapture.processing")
  assert pg.locator('#tdCaptureFrozen').is_visible();assert pg.evaluate('__captureCalls')==2;assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_capture_intake_v60').length")==1
- pg.locator('#tdLiveName').fill('李明');pg.locator('#tdLivePhone').fill('09943253053');pg.locator('#tdLiveManual').click();pg.wait_for_function("tdCapture.state==='success' && !tdLive.busy")
+ pg.locator('#tdLiveName').fill('李明');pg.locator('#tdLivePhone').fill('09943253053');pg.evaluate("tdScan.rows=[{tracking_no:'LEGACY001'}]");count=pg.evaluate('__liveCalls.length');pg.locator('#tdLiveManual').click();assert pg.evaluate('__liveCalls.length')==count;pg.evaluate('tdScan.rows=[]');pg.locator('#tdLiveManual').click();pg.wait_for_function("tdCapture.state==='success' && !tdLive.busy")
  assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_capture_intake_v60').at(-1).args.p_confirmed") is True
  # A lost response blocks all new attempts; recovery must show original success.
  pg.evaluate("__text='地址: (Aung Kyaw09922222222)';__lost=true");pg.locator('#tdLiveStart').click();pg.wait_for_function('!!tdLive.pending && !tdLive.busy && !tdCapture.processing')
