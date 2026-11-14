@@ -67,3 +67,6 @@
   Cache-Control: no-cache
 /intake-v62.css
   Cache-Control: no-cache
+
+/label-manual-v621.js
+  Cache-Control: no-cache
