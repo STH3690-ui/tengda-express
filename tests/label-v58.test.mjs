@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRequire} from 'node:module';
-const require=createRequire(import.meta.url);
-const {parseLabel}=require('../label-v58.js');
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
+const module={exports:{}};
+const code=readFileSync(new URL('../label-v58.js',import.meta.url),'utf8');
+runInNewContext(code,{module,globalThis:{}});
+const {parseLabel,matchCustomer}=module.exports;
 test('complete label can be parsed without performing writes',()=>{
  const r=parseLabel('中通快递\n运单号: 79045587905964\n收件人: 安康\n手机号: 09943253053');
  assert.equal(r.tracking_no,'79045587905964');
@@ -20,28 +23,22 @@ test('multiple waybills must not auto intake',()=>{
 });
 
 test('unique name and phone matches existing customer',()=>{
- const {matchCustomer}=require('../label-v58.js');
  assert.deepEqual(matchCustomer([{id:'c1',name:'安康',phone:'09943253053'}],{name:'安康',phone:'09943253053'}),{status:'matched',customer_id:'c1'});
 });
 test('same name different phone must be reviewed',()=>{
- const {matchCustomer}=require('../label-v58.js');
  assert.equal(matchCustomer([{id:'c1',name:'安康',phone:'09911111111'}],{name:'安康',phone:'09943253053'}).status,'review');
 });
 test('same phone different name must be reviewed',()=>{
- const {matchCustomer}=require('../label-v58.js');
  assert.equal(matchCustomer([{id:'c1',name:'小明',phone:'09943253053'}],{name:'安康',phone:'09943253053'}).status,'review');
 });
 
 test('phone with spaces matches after normalization',()=>{
- const {matchCustomer}=require('../label-v58.js');
  assert.equal(matchCustomer([{id:'c1',name:'安康',phone:'099 4325 3053'}],{name:'安康',phone:'09943253053'}).status,'matched');
 });
 test('two matching customers must be reviewed',()=>{
- const {matchCustomer}=require('../label-v58.js');
  assert.equal(matchCustomer([{id:'c1',name:'安康',phone:'09943253053'},{id:'c2',name:'安康',phone:'09943253053'}],{name:'安康',phone:'09943253053'}).status,'review');
 });
 test('no customer match returns new without creating records',()=>{
- const {matchCustomer}=require('../label-v58.js');
  assert.equal(matchCustomer([],{name:'安康',phone:'09943253053'}).status,'new');
 });
 
