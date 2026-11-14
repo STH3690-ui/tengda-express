@@ -9,7 +9,8 @@ with sync_playwright() as p:
  b=getattr(p,engine).launch(**opts);pg=b.new_page(viewport={'width':390,'height':844});errors=[];pg.on('pageerror',lambda e:errors.append(str(e)));pg.on('dialog',lambda d:d.accept())
  def route(r):
   u=r.request.url
-  if '/vendor/supabase-' in u:r.fulfill(content_type='text/javascript',body=STUB)
+  if u.startswith('blob:'):r.continue_()
+  elif '/vendor/supabase-' in u:r.fulfill(content_type='text/javascript',body=STUB)
   elif u.startswith('https://station.test/'):
    f=ROOT/(u.split('https://station.test/')[1].split('?')[0] or 'index.html');r.fulfill(path=str(f)) if f.is_file() else r.fulfill(status=404,body='')
   else:r.abort()
