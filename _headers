@@ -3,7 +3,7 @@
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=(self)
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
 /index.html
   Cache-Control: no-cache
 /tengda-staff-auth-v32.js
@@ -24,3 +24,12 @@
   Cache-Control: no-cache
 /scan.css
   Cache-Control: no-cache
+
+/label-v58.js
+  Cache-Control: no-cache
+/label-ui-v58.js
+  Cache-Control: no-cache
+/label-ocr-v58.js
+  Cache-Control: no-cache
+/vendor/tesseract-v6/*.wasm
+  Content-Type: application/wasm

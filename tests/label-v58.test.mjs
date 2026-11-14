@@ -59,3 +59,22 @@ test('phone label 手机号 is recognized',()=>{
  assert.equal(r.phone,'09943253053');
  assert.equal(r.eligible_for_auto_intake,true);
 });
+const {normalizePhone,canAutoCommit}=module.exports;
+test('Myanmar and China canonical phone formats agree',()=>{
+ assert.equal(normalizePhone('+95 9943253053'),'09943253053');
+ assert.equal(normalizePhone('00959943253053'),'09943253053');
+ assert.equal(normalizePhone('+86 13800138000'),'13800138000');
+ for(const p of ['099****3053','09X43253053','phone: 09943253053','NaN','099'])assert.equal(normalizePhone(p),'');
+});
+test('line breaks remain boundaries and two recipient phones require review',()=>{
+ const r=parseLabel('运单号: TD12345678\n收件人: 安 康\n手机号: 09943253053\n电话: 09911111111');
+ assert.equal(r.name,'安康');assert.equal(r.eligible_for_auto_intake,false);
+});
+test('archived hidden deleted or conflicting customers are never auto matched',()=>{
+ for(const flag of ['archived','hidden','deleted_at'])assert.equal(matchCustomer([{id:'c',name:'安康',phone:'09943253053',[flag]:true}],{name:'安康',phone:'09943253053'}).status,'review');
+});
+test('automatic writes require independent barcode and bounded high word confidence',()=>{
+ const p=parseLabel('运单号: TD12345678\n收件人: 安康\n手机号: 09943253053');
+ const e={confidence:99,minConfidence:95,barcode:'TD12345678',edited:false};assert.equal(canAutoCommit(p,e),true);
+ for(const change of [{confidence:96},{confidence:Infinity},{confidence:101},{minConfidence:0},{minConfidence:101},{barcode:'WRONG'},{edited:true}])assert.equal(canAutoCommit(p,{...e,...change}),false);
+});

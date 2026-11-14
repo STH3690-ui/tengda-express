@@ -16,6 +16,14 @@ try{
  for(const file of ['docs/PRODUCTION_MIGRATION.sql','migrations/permissions_safe_delete_v50_DRAFT.sql','sql/staff-entry-delete-v54.sql','sql/deletion-history-relations-v55.sql','sql/history-batch-delete-v56.sql','supabase/migrations/20261113131906_smart_scan_pos_v57.sql']){
   try{if(file.includes('smart_scan_pos'))await c.query(`create table public.td_parcel_hidden_v51(parcel_id uuid primary key,hidden_by uuid,hidden_at timestamptz default now(),reason text);create table public.td_pickup_hidden_v53(batch_id uuid primary key,hidden_by uuid,hidden_at timestamptz default now(),reason text);`);let sql=await readFile(file,'utf8');if(file==='docs/PRODUCTION_MIGRATION.sql'){const keys=sql.split('\n').filter(l=>l.includes('ADD CONSTRAINT')&&l.includes('PRIMARY KEY')).join('\n');const pos=sql.indexOf('DO $$ BEGIN IF NOT EXISTS(select 1 from pg_constraint');sql=sql.slice(0,pos)+keys+'\n'+sql.slice(pos)}await c.query(sql);}catch(e){console.error('Migration failed:',file,e.message);throw e;}
  }
+ if(process.env.TD_TEST_V58==='1'){
+  const migration=await readFile('supabase/migrations/20261114030303_v58_label_atomic_intake.sql','utf8');
+  await assert.rejects(c.query(migration.replace("notify pgrst","select 1/0;notify pgrst")));await c.query('rollback');
+  assert.equal((await c.query("select to_regprocedure('public.td_label_capabilities_v58()') fn,to_regclass('td_private.label_requests_v58') tbl")).rows[0].fn,null);
+  assert.equal((await c.query("select to_regclass('td_private.label_requests_v58') tbl")).rows[0].tbl,null);
+  await c.query(migration);await assert.rejects(c.query(migration));await c.query('rollback');
+ }
+
  const owner=randomUUID(),staff=randomUUID(),customer=randomUUID(),other=randomUUID();
  await c.query('insert into auth.users(id) values($1),($2)',[owner,staff]);await c.query("insert into td_members(id,display_name,role,active,permissions) values($1,'Owner','owner',true,'{}'),($2,'Staff','staff',true,'{}')",[owner,staff]);
  await c.query("select set_config('request.jwt.claim.sub',$1,false)",[owner]);
@@ -52,5 +60,6 @@ try{
  await c.query("insert into td_business_hidden_v54(source_table,source_id,reason,hidden_by,batch_id,snapshot) values('td_parcels',$1,'测试删除保护',$2,gen_random_uuid(),'{}')",[fresh[2],owner]);await auth(c);assert.equal((await rpc('td_scan_lookup_v57',['HIDDEN100','query']))[0].status,'deleted');await assert.rejects(rpc('td_scan_checkout_v57',[randomUUID(),JSON.stringify({...payload,items:[{parcel_id:fresh[2],pieces:2}]}),true]));
  await c.query('reset role');await c.query("insert into td_parcel_hidden_v51(parcel_id,reason,hidden_by) values($1,'旧版删除',$2)",[fresh[1],owner]);await auth(c);assert.equal((await rpc('td_scan_lookup_v57',['ROLLBACK1','query']))[0].status,'deleted');
  assert.equal((await c.query("select has_schema_privilege('authenticated','td_private','USAGE') ok")).rows[0].ok,true);
+ if(process.env.TD_TEST_V58==='1')await (await import('../tests/v58-db-checks.mjs')).run({c,pg,auth,rpc,owner,staff});
  console.log('PASS PostgreSQL V57: full existing migrations, permissions/RLS/privacy, mixed intake results, normalized duplicate prevention, idempotency, authoritative freight/debt, real concurrent checkout, late-failure rollback, hidden parcel protection.');
 }finally{if(c)await c.end();await pg.stop();await rm(directory,{recursive:true,force:true});}
