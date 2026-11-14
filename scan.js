@@ -119,7 +119,7 @@ async function tdV58ReadPhoto(input){
  const file=input.files?.[0];if(!file)return;
  const box=$('tdV58Result');if(!box)return;
  if(!file.type.startsWith('image/')||file.size>10*1024*1024){box.textContent='仅支持不超过10MB的图片';return}
- if(typeof globalThis.TextDetector!=='function'){box.textContent='当前浏览器不支持设备端文字识别。可手动粘贴或修改面单文字；不会上传照片到第三方。';return}
+ if(typeof globalThis.TextDetector!=='function'||typeof globalThis.createImageBitmap!=='function'){box.textContent='此浏览器暂不支持本地照片 OCR（部分 iPhone Safari 不支持）。请用 iPhone 照片中的「实况文本」复制面单文字，再粘贴到下方预检；不会上传照片到第三方。';return}
  box.textContent='正在设备上识别文字…';
  let bitmap;
  try{
