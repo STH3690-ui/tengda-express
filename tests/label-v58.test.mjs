@@ -44,3 +44,13 @@ test('no customer match returns new without creating records',()=>{
  const {matchCustomer}=require('../label-v58.js');
  assert.equal(matchCustomer([],{name:'安康',phone:'09943253053'}).status,'new');
 });
+
+test('standalone Myanmar phone is not treated as a tracking number',()=>{
+ const r=parseLabel('收件人: 安康\n手机号: 09943253053\n09943253053');
+ assert.equal(r.tracking_no,'');
+ assert.equal(r.eligible_for_auto_intake,false);
+});
+test('sorting code cannot stand in for missing waybill',()=>{
+ const r=parseLabel('631-C10 789\n收件人: 安康\n手机号: 09943253053');
+ assert.equal(r.eligible_for_auto_intake,false);
+});
