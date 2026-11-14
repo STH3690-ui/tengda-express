@@ -27,7 +27,7 @@ with sync_playwright() as p:
  pg.get_by_role('button',name='人工确认并入库',exact=True).click();pg.wait_for_function('!tdLabel.busy');assert pg.evaluate("__v58.filter(x=>x.name==='td_label_intake_v58').length") == 1
  assert pg.evaluate("__v58.find(x=>x.name==='td_label_intake_v58').args.p_confirmed") is True
  pg.evaluate("__state='review'");preview(text);pg.wait_for_function("document.getElementById('tdV58Result').textContent.includes('review')");assert pg.locator('#tdV58Commit').is_disabled()
- pg.evaluate("__state='matched';window.__lost=true");preview(text);pg.wait_for_function("!document.getElementById('tdV58Commit').disabled");pg.locator('#tdV58Commit').click();pg.wait_for_function('!!tdLabel.pending && !tdLabel.busy');before=len(pg.evaluate('__v58'));pg.locator('#tdV58Commit').click();assert len(pg.evaluate('__v58'))==before
+ pg.evaluate("__state='matched';window.__lost=true");preview(text);pg.wait_for_function("!document.getElementById('tdV58Commit').disabled");pg.locator('#tdV58Commit').click();pg.wait_for_function('!!tdLabel.pending && !tdLabel.busy');before=len(pg.evaluate('__v58'));assert pg.locator('#tdV58Commit').is_disabled();pg.evaluate('tdV58Commit(false)');assert len(pg.evaluate('__v58'))==before
  pg.locator('#tdV58Resolve').click();pg.wait_for_function('!tdLabel.pending && !tdLabel.busy');assert pg.evaluate("sessionStorage.getItem(tdV58Key())") is None
  # Actual UI photo path, high-confidence engine and independent barcode mocked independently.
  pg.evaluate("""()=>{window.__lost=false;__state='new';TDLabelOCR.recognize=async()=>({text:'运单号: TD12345678\\n收件人: 安康\\n手机号: 09943253053',confidence:99,minConfidence:96});ZXing.BrowserMultiFormatReader.prototype.decodeFromImageUrl=async()=>({getText:()=>'TD12345678'})}""")
