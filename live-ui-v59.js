@@ -2,7 +2,7 @@
 const tdLive={running:false,epoch:0,stream:null,timer:null,gate:new TDLiveV59.Gate(),candidate:null,digest:null,busy:false,pending:null,frame:null,session:null,cap:null};
 function tdV59PanelHTML(){return `<section class="td-live" id="tdLivePanel"><div class="td-live-heading"><span>V59 · 实时智能入库</span><h2>对准地址末尾，自动入库</h2><p>只识别附加的客户姓名和手机。默认一件，取件时统一称重。</p></div><div class="td-live-camera"><video id="tdLiveVideo" autoplay muted playsinline aria-label="地址末尾实时识别"></video><div class="td-live-guide"><span>客户姓名 + 中国 / 缅甸手机</span></div></div><div class="td-live-actions"><button class="primary" id="tdLiveStart" onclick="tdV59Start()">开始实时自动入库</button><button class="secondary" onclick="tdV59Stop()">停止</button></div><p id="tdLiveStatus" role="status" aria-live="polite">将面单地址末尾放进框内，不用拍照或上传。</p><div class="td-live-customer"><label>客户姓名<input id="tdLiveName" maxlength="60" autocomplete="off" oninput="tdV59Edited()" placeholder="识别后显示，可手动修改"></label><label>手机号码<input id="tdLivePhone" maxlength="25" inputmode="tel" autocomplete="off" oninput="tdV59Edited()" placeholder="完整号码，不接受隐藏号"></label></div><button class="secondary" id="tdLiveManual" onclick="tdV59Commit(true)">核对后手动入库 / 确认另一件</button><button class="secondary" id="tdLiveResolve" onclick="tdV59Resolve()" hidden>核实上次入库结果</button><p class="td-live-hint">同客户再次出现时，确认实物确为另一件再入库。仓库资料、冲突或模糊文字不会自动提交。</p><ol id="tdLiveRecent" class="td-live-recent" aria-live="polite"></ol></section>`;}
 const tdV59LegacyPage=tdScanPage;
-tdScanPage=function(){const html=tdV59LegacyPage();return page==='scanIntake'?tdV59PanelHTML()+'<details id="tdV59Legacy"><summary>传统条码、拍照识别与手动批量入库</summary>'+html+'</details>':html};
+tdScanPage=function(){const html=tdV59LegacyPage();return page==='scanIntake'?tdV59PanelHTML()+'<details id="tdV59Legacy" ontoggle="if(this.open)tdV59Stop()"><summary>传统条码、拍照识别与手动批量入库</summary>'+html+'</details>':html};
 function tdV59Message(text){const box=$('tdLiveStatus');if(box)box.textContent=text;}
 function tdV59Storage(){return 'td-live-v59:'+user?.id;}
 function tdV59Session(){if(tdLive.session)return tdLive.session;try{tdLive.session=sessionStorage.getItem(tdV59Storage()+':session')}catch{}if(!tdLive.session)tdLive.session=crypto.randomUUID();try{sessionStorage.setItem(tdV59Storage()+':session',tdLive.session)}catch{}return tdLive.session;}
@@ -16,8 +16,8 @@ function tdV59Stop(reset=false){
  if($('tdLiveStart'))$('tdLiveStart').disabled=false;
 }
 async function tdV59Start(){
- if(page!=='scanIntake'||tdLive.busy||tdLive.pending||tdLabel.busy||tdLabel.pending||tdScan.busy||tdScan.uncertain)return tdV59Message('先完成或核实当前请求');
- tdV59Stop();tdScanStop();try{tdScan.audio=tdScan.audio||new(window.AudioContext||window.webkitAudioContext)();tdScan.audio.resume().catch(()=>{})}catch{}tdLive.edited=false;const epoch=tdLive.epoch,actor=user?.id;
+ if(page!=='scanIntake'||tdLive.busy||tdLive.pending||tdLabel.busy||tdLabel.pending||tdScan.busy||tdScan.uncertain||tdScan.rows.length||tdLabel.file||$('tdV58Text')?.value.trim())return tdV59Message('先完成、清空或核实传统入库清单');
+ tdV59Stop();tdScanStop();if($('tdV59Legacy'))$('tdV59Legacy').open=false;try{tdScan.audio=tdScan.audio||new(window.AudioContext||window.webkitAudioContext)();tdScan.audio.resume().catch(()=>{})}catch{}tdLive.edited=false;const epoch=tdLive.epoch,actor=user?.id;
  try{
   tdV59Message('正在检查权限并打开后置摄像头…');tdLive.cap=await tdScanRpc('td_live_capabilities_v59');if(epoch!==tdLive.epoch||page!=='scanIntake'||actor!==user?.id)return;
   if(!tdLive.cap.intake)throw Error('需要包裹入库及客户资料权限；仍可使用传统人工选客户');

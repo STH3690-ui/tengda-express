@@ -78,6 +78,7 @@ async function tdScanRecover(){let id;try{id=sessionStorage.getItem(tdScanStorag
 function tdScanShowResults(){const el=$('tdScanResults');if(el)el.innerHTML='<h3>提交结果</h3>'+tdScan.results.map((r,i)=>'<p class="'+(r.success?'':'error')+'">'+esc(r.tracking_no||r.batch_id||'')+' · '+(r.success?'保存成功':'失败：'+esc(r.error||''))+(r.photoMessage?' · '+esc(r.photoMessage):'')+'</p>'+(r.success&&r.parcel_id?'<button class="secondary" onclick="tdScanOpenPhoto('+i+')">查看 / 补传该包裹图片</button>':'')).join('');}
 function tdScanOpenPhoto(index){const id=tdScan.results[index]?.parcel_id;if(id)tdNavigate({page:'parcels',view:'photos',id})}
 async function tdScanSaveIntake(){
+ if(typeof tdLive!=='undefined'&&(tdLive.busy||tdLive.pending))return tdScanMessage('请先完成或核实实时入库请求',true);if(typeof tdV59Stop==='function')tdV59Stop();
  if(tdScan.busy||tdScan.uncertain||tdScan.queued||!tdScanAvailable('intake'))return tdScanMessage('请等待扫描查询完成、检查权限或核实上次请求',true);
  if(!tdScan.rows.length)return tdScanMessage('请先扫描包裹',true);
  if(tdScan.rows.some(r=>!r.customer_id||!Number.isInteger(Number(r.pieces))||Number(r.pieces)<1||!Number.isFinite(Number(r.weight_kg))||Number(r.weight_kg)<0))return tdScanMessage('每条运单都必须选择客户，并填写正确的件数和重量',true);

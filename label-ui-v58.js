@@ -36,6 +36,7 @@ async function tdV58Preview(fromOCR=false){
 function tdV58Key(){return 'td-label-request-v58:'+user.id;}
 function tdV58Pending(id){tdLabel.pending=id;try{id?sessionStorage.setItem(tdV58Key(),id):sessionStorage.removeItem(tdV58Key())}catch{}if($('tdV58Resolve'))$('tdV58Resolve').hidden=!id;}
 async function tdV58Commit(automatic=false){
+ if(typeof tdLive!=='undefined'&&(tdLive.busy||tdLive.pending))return tdV58Message('请先完成或核实实时入库请求');if(typeof tdV59Stop==='function')tdV59Stop();
  if(page!=='scanIntake'||tdLabel.busy||tdLabel.pending||tdScan.busy||tdScan.uncertain||!navigator.onLine)return tdV58Message('正在处理、请求待核实或离线，不能提交');
  const p=tdLabel.parsed;if(!p?.eligible_for_auto_intake||p.match?.status==='review'||!p.match)return tdV58Message('请先核对面单并匹配客户');
  const pieces=Number($('tdV58Pieces').value),weight=Number($('tdV58Weight').value),create=!!$('tdV58Create').checked;
