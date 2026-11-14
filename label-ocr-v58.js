@@ -10,7 +10,7 @@ async function recognize(file,onProgress=()=>{}){
    url=URL.createObjectURL(file);await new Promise((ok,no)=>{image.onload=ok;image.onerror=()=>no(Error('照片无法解码，请改用JPEG或PNG'));image.src=url});
    const scale=Math.min(1,2200/Math.max(image.naturalWidth,image.naturalHeight));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
    if(!root.Tesseract)throw Error('本地OCR组件未加载，请联网重新打开页面');
-   if(!worker){const next=await Tesseract.createWorker('chi_sim+eng',1,{workerPath:'/vendor/tesseract-v6/worker.min.js',corePath:'/vendor/tesseract-v6/',langPath:'/vendor/tesseract-v6/lang',workerBlobURL:false,logger:m=>onProgress(m.status,Math.round((m.progress||0)*100))});if(current!==epoch){await next.terminate();throw Error('识别已取消')}worker=next;}
+   if(!worker){const next=await Tesseract.createWorker('chi_sim+eng',1,{workerPath:'/vendor/tesseract-v6/worker.min.js',corePath:'/vendor/tesseract-v6/tesseract-core-lstm.js',langPath:'/vendor/tesseract-v6/lang',workerBlobURL:false,logger:m=>onProgress(m.status,Math.round((m.progress||0)*100))});if(current!==epoch){await next.terminate();throw Error('识别已取消')}worker=next;}
    const result=await worker.recognize(canvas,{}, {text:true,blocks:true});
    const words=(result.data.blocks||[]).flatMap(b=>(b.paragraphs||[]).flatMap(p=>(p.lines||[]).flatMap(l=>l.words||[]))).filter(w=>/[\p{L}\d]/u.test(w.text||''));
    if(current!==epoch)throw Error('识别已取消');return {text:result.data.text||'',confidence:Number(result.data.confidence)||0,minConfidence:words.length?Math.min(...words.map(w=>Number(w.confidence)||0)):0};

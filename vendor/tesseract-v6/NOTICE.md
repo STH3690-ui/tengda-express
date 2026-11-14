@@ -8,3 +8,5 @@ Self-hosted, free OCR assets (no OCR network service).
 Models and workers are served from this site's own origin. Runtime OCR receives local canvas pixels; it does not upload photos. A separate, explicit normal Storage upload happens only after confirmed parcel creation.
 
 SHA256SUMS records the shipped asset bytes; update it whenever vendored assets change.
+
+The core uses the upstream non-embedded LSTM loader (.js plus same-origin .wasm), avoiding a data-URL fetch that WebKit rejects under connect-src self. No broad data: connection exemption is needed.
