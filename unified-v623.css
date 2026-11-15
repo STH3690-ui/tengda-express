@@ -1,0 +1,14 @@
+/* Share the compact fields and surface between primary photo intake and actual traditional/V58 intake. */
+body[data-td-page=scanIntake] #page #tdV58PreviewPanel.td-traditional{display:grid;gap:9px;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important}
+body[data-td-page=scanIntake] #page #tdV58PreviewPanel[hidden]{display:none!important}
+body[data-td-page=scanIntake] #page .td-traditional .td-live-camera video{display:block;width:100%;height:100%;min-height:0;object-fit:cover;margin:0;border-radius:0}
+.td-traditional .td-live-guide{inset:15% 5%;border-width:1.5px;border-radius:8px}
+body[data-td-page=scanIntake] #page .td-traditional #tdScanStart{height:48px!important;min-height:48px!important;min-width:76px;padding:8px 14px!important;border-radius:24px!important;border:1px solid #e2bf7b!important;background:#d7ae64!important;color:#17130c!important;font-weight:700}
+body[data-td-page=scanIntake] #page .td-traditional form{margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:transparent!important}
+body[data-td-page=scanIntake] #page .td-traditional label .td-field-icon{display:none!important}
+body[data-td-page=scanIntake] #page #tdV623Advanced{margin:0!important;padding:0!important;border:0!important;font-size:12px;background:transparent!important}
+#tdV623Advanced>summary,#tdV623Batch>summary{display:flex;align-items:center;min-height:44px;padding:6px 2px;color:#bda779;cursor:pointer}
+#tdV623Advanced .td-compact-advanced>label{width:100%;margin:3px 0!important}#tdV623Advanced textarea{min-height:90px;width:100%}
+.td-shared-customer-results{display:flex;flex-direction:column;max-height:180px;overflow:auto;gap:4px;margin:5px 0 0}.td-shared-customer-results:empty{margin:0}.td-shared-customer-results button{min-height:44px!important;text-align:left}
+body[data-td-page=scanIntake] #page .td-traditional #tdV58Result,body[data-td-page=scanIntake] #page .td-traditional #tdScanMessage{font-size:12px;line-height:18px;margin:0!important;overflow-wrap:anywhere;color:#d9c5a1}
+#tdV58Result:empty,#tdScanMessage:empty{display:none}#tdV623Batch{width:100%}
