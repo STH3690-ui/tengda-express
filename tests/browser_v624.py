@@ -34,7 +34,7 @@ with sync_playwright() as p:
   assert page.locator('#tdPagedList tr').count()<=151
   if target=='customers':
    first=page.evaluate('tdPagedState().rows[0].id');page.get_by_role('button',name='下一页',exact=True).click();page.wait_for_function('()=>tdPagedState().offset===50 && !document.querySelector("#tdPagedList").hasAttribute("aria-busy")');assert page.evaluate('tdPagedState().rows[0].id')!=first
-   page.locator('#tdPagedSearch').fill('客户1205');page.wait_for_function("()=>tdPagedState().rows.length===1 && tdPagedState().rows[0].name==='客户1205'");page.get_by_role('button',name='修改',exact=True).click();assert page.locator('#customerForm input[name="name"]').input_value()=='客户1205';page.evaluate('cancelCustomerEdit();tdUiSaved()')
+   page.locator('#tdPagedSearch').fill('客户1205');page.wait_for_function("()=>tdPagedState().rows.length===1 && tdPagedState().rows[0].name==='客户1205'");page.get_by_role('button',name='修改',exact=True).click();assert page.locator('#customerForm input[name="name"]').input_value()=='客户1205';page.evaluate('cancelCustomerEdit()');page.wait_for_function("()=>page==='customers'&&!tdNav.route.view");page.evaluate('tdUiSaved()')
   if target in ['orders','parcels']:
    page.locator('input[placeholder="输入姓名或电话"]').fill('客户1205');page.wait_for_function("()=>document.querySelector('select[name=customer_id]').options.length===2");page.locator('select[name="customer_id"]').select_option(label='客户1205 09900001204')
    if target=='parcels':page.wait_for_function("()=>!!document.querySelector('#tdParcelOrderChoices input')");assert page.locator('#tdParcelOrderChoices input').count()==1
@@ -47,8 +47,10 @@ with sync_playwright() as p:
  assert page.evaluate('data.td_payments.reduce((s,x)=>s+x.amount,0)')==12050
  # Failure does not replace authoritative full arrays with truncated/empty totals.
  page.evaluate("async()=>{__fail='td_payments';await refresh()}");assert page.evaluate('data.td_payments.length')==1205;page.evaluate("__fail='';tdUiSaved()")
+ # Direct edit links fetch their authorized target even outside the first 50 rows.
+ page.reload();page.evaluate("async()=>{location.hash='#/customers/edit/'+__fixtures.td_customers[1204].id;user={id:'owner'};await enter()}");page.wait_for_function("()=>document.querySelector('#customerForm input[name=name]')?.value==='客户1205'");assert not page.evaluate('__reads.some(x=>x.table==="td_payments")')
  # Membership permissions are available before the first data snapshot for real staff login.
- page.reload();page.evaluate("async()=>{__role='staff';user={id:'staff'};await enter()}");assert page.locator('[data-route="parcels"]').is_visible();assert page.locator('[data-route="staff"]').count()==0;assert page.locator('[data-route="dashboard"]').count()==0
+ page.reload();page.evaluate("async()=>{__role='staff';user={id:'staff'};await enter();tdNavigate('home')}");assert page.locator('[data-route="parcels"]').is_visible();assert page.locator('[data-route="staff"]').count()==0;assert page.locator('[data-route="dashboard"]').count()==0
  page.evaluate('async()=>{__delay=75;const task=refresh();tdClearSessionView();await task}');assert page.evaluate('user===null && Object.values(data).every(x=>x.length===0)')
  assert page.evaluate('__mutations')==0
  assert errors==[],errors

@@ -69,7 +69,7 @@ async function tdPagedLoad(id){
   const rows=results.flatMap(x=>x.rows),names=await tdPagedNames(rows);
   if(epoch!==tdPaged.epoch||actor!==user?.id||token!==s.token||!box.isConnected||page!==id)return;
   for(const result of results)tdPagedRemember(result.table,result.rows);if(id!=='customers')tdPagedRemember('td_customers',names);
-  tdCustomerLookup=names; s.rows=rows;s.names=names;s.loadedAt=Date.now();s.next=results.some(x=>x.next);s.loaded=true;tdPagedPaint(id);box.removeAttribute('aria-busy');
+  tdCustomerLookup=names; s.rows=rows;s.names=names;s.loadedAt=Date.now();s.next=results.some(x=>x.next);s.loaded=true;tdPagedPaint(id);tdPagedDetail();box.removeAttribute('aria-busy');
  }catch(e){if(box.isConnected&&token===s.token&&epoch===tdPaged.epoch){box.removeAttribute('aria-busy');box.innerHTML='<p role="alert">列表读取失败：'+esc(e.message)+'</p><button class="secondary" onclick="tdPagedLoad(page)">重试</button>'}}
 }
 function tdPagedPaint(id){
@@ -99,5 +99,18 @@ tdParcelOrderChoices=function(){
 };
 function tdPagedMount(){if(!tdPagedActive())return;const state=tdPagedState();if(state.loaded&&Date.now()-state.loadedAt<30000){
  for(const table of (page==='records'?['td_orders','td_parcels','td_pickups']:[tdPagedTables[page]]))tdPagedRemember(table,state.rows.filter(x=>x.__table===table));
- if(page!=='customers')tdPagedRemember('td_customers',state.names||[]);tdCustomerLookup=state.names||[];tdPagedPaint(page);
+ if(page!=='customers')tdPagedRemember('td_customers',state.names||[]);tdCustomerLookup=state.names||[];tdPagedPaint(page);tdPagedDetail();
  }else tdPagedLoad(page)}
+
+// Direct edit links must work even when the target customer is outside the first page.
+async function tdPagedDetail(){
+ const route={...tdNav.route};if(page!=='customers'||route.view!=='edit'||data.td_customers.some(x=>x.id===route.id))return;
+ const form=$('customerForm');if(!form)return;const epoch=tdPaged.epoch,actor=user?.id,controls=Array.from(form.elements),disabled=controls.map(x=>x.disabled);controls.forEach(x=>x.disabled=true);
+ try{
+  const r=await tdPagedRequest(db.from('td_customers').select('*').eq('id',route.id).range(0,0));if(r.error)throw r.error;
+  if(epoch!==tdPaged.epoch||actor!==user?.id||!form.isConnected||tdRouteKey(tdNav.route)!==tdRouteKey(route))return;
+  const row=r.data?.[0];if(!row||row.deleted_at||tdPagedHidden('td_customers',row))throw Error('客户不在当前账号可访问范围');
+  data.td_customers=[...data.td_customers,row];tdOriginalViews.editCustomer(row.id);tdCaptureBaseline();
+ }catch(e){if(form.isConnected&&epoch===tdPaged.epoch)notify('客户读取失败：'+e.message,true)}
+ finally{controls.forEach((x,i)=>x.disabled=disabled[i])}
+}

@@ -79,7 +79,7 @@ function tdNavigate(target){
 }
 function tdBack(){if(tdNav.reverting)return;if(tdNav.index>0)window.history.back();else tdNavigate('home')}
 function tdOnPopState(event){
- if(!user)return;
+ if(!user||!role)return;
  const route=tdParseRoute(window.location.hash),next=Number.isInteger(event.state?.tdIndex)?event.state.tdIndex:0;
  if(tdNav.reverting){if(tdRouteKey(route)===tdRouteKey(tdNav.route)&&next===tdNav.index)tdNav.reverting=false;else if(next!==tdNav.index)window.history.go(tdNav.index-next);return;}
  if(tdRouteKey(route)===tdRouteKey(tdNav.route))return;
@@ -115,7 +115,7 @@ function tdRenderApp(){
  if(page==='parcels')tdParcelOrderChoices();
  if(page==='pickups'){loadPickupBatches();tdLoadDebts()}
  if(page==='dashboard')tdLoadFinance();if(page==='query')renderQueryResults();if(page==='records')filterRecords();if(page==='staffAudit')tdAuditRenderResults();if(page==='deletions')loadDeletionLogs();
- if(route.view==='edit'&&page==='customers'){tdOriginalViews.editCustomer(route.id)}
+ if(route.view==='edit'&&page==='customers'&&(tdDataReady||data.td_customers.some(x=>x.id===route.id))){tdOriginalViews.editCustomer(route.id)}
  if(route.view==='permissions'&&page==='staff')tdOriginalViews.tdPermissionsPanel(route.id);
  if(route.view==='photos'){if(detailHTML!==null&&$(detailBox))$(detailBox).innerHTML=detailHTML;else if(page==='parcels')tdOriginalViews.openPhotos(route.id);else if(page==='orders')tdOriginalViews.openOrderPhotos(route.id)}
  if(page==='stations')tdLoadStations().then(()=>{if(tdRouteKey(tdNav.route)!==key)return;if(route.view==='edit'&&!draft){tdOriginalViews.tdEditStation(route.id);tdCaptureBaseline()}});
