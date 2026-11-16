@@ -4,10 +4,9 @@ async function stop(){epoch++;workerGeneration++;const cancel=cancelRun;cancelRu
 let loading=null,workerGeneration=0;
 async function ensureWorker(progress=()=>{}){
  if(worker)return worker;const generation=workerGeneration;if(loading&&loading.generation===generation)return loading.promise;
- const promise=(async()=>{const next=await Tesseract.createWorker('chi_sim+eng',1,{workerPath:'/vendor/tesseract-v6/worker.min.js',corePath:'/vendor/tesseract-v6/tesseract-core-lstm.js',langPath:'/vendor/tesseract-v6/lang',workerBlobURL:false,logger:m=>progress(m.status,Math.round((m.progress||0)*100))});if(generation!==workerGeneration){await next.terminate();throw Error('识别已取消')}worker=next;return next})();loading={generation,promise};try{return await promise}finally{if(loading?.promise===promise)loading=null}
+ const promise=(async()=>{await TDAssets.ocr();if(generation!==workerGeneration)throw Error('识别已取消');const next=await Tesseract.createWorker('chi_sim+eng',1,{workerPath:'/vendor/tesseract-v6/worker.min.js',corePath:'/vendor/tesseract-v6/tesseract-core-lstm.js',langPath:'/vendor/tesseract-v6/lang',workerBlobURL:false,logger:m=>progress(m.status,Math.round((m.progress||0)*100))});if(generation!==workerGeneration){await next.terminate();throw Error('识别已取消')}worker=next;return next})();loading={generation,promise};try{return await promise}finally{if(loading?.promise===promise)loading=null}
 }
 async function canvasJob(canvas,progress,current,options={}){
- if(!root.Tesseract)throw Error('本地OCR组件未加载，请联网重新打开页面');
  const active=await ensureWorker(progress);if(current!==epoch)throw Error('识别已取消');await active.setParameters({tessedit_pageseg_mode:String(options.psm||3)});
  if(current!==epoch)throw Error('识别已取消');const result=await active.recognize(canvas,{}, {text:true,blocks:true});
  if(current!==epoch)throw Error('识别已取消');

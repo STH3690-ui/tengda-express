@@ -20,6 +20,7 @@ async function tdScanStart(){
  tdScanStop();tdScanMessage('正在打开摄像头…');const token=tdScan.cameraToken;const video=$('tdScanVideo');
  try{tdScan.audio=tdScan.audio||new (window.AudioContext||window.webkitAudioContext)();tdScan.audio.resume().catch(()=>{})}catch{}
  try{
+  await TDAssets.barcode();if(token!==tdScan.cameraToken||!video?.isConnected)return;
   const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:tdScan.device?{deviceId:{exact:tdScan.device}}:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
   if(token!==tdScan.cameraToken||!video?.isConnected){stream.getTracks().forEach(t=>t.stop());return;}
   tdScan.stream=stream;video.srcObject=stream;await video.play();

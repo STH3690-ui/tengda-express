@@ -30,6 +30,7 @@ with sync_playwright() as p:
  pg.evaluate("__state='matched';window.__lost=true");preview(text);pg.wait_for_function("!document.getElementById('tdV58Commit').disabled");pg.locator('#tdV58Commit').click();pg.wait_for_function('!!tdLabel.pending && !tdLabel.busy');before=len(pg.evaluate('__v58'));assert pg.locator('#tdV58Commit').is_disabled();pg.evaluate('tdV58Commit(false)');assert len(pg.evaluate('__v58'))==before
  pg.locator('#tdV58Resolve').click();pg.wait_for_function('!tdLabel.pending && !tdLabel.busy');assert pg.evaluate("sessionStorage.getItem(tdV58Key())") is None
  # Actual UI photo path, high-confidence engine and independent barcode mocked independently.
+ pg.evaluate("async()=>{await TDAssets.barcode()}")
  pg.evaluate('tdV58Reset()');pg.evaluate("""()=>{window.__lost=false;__state='new';TDLabelOCR.recognize=async()=>({text:'运单号: TD12345678\\n收件人: 安康\\n手机号: 09943253053',confidence:99,minConfidence:96});ZXing.BrowserMultiFormatReader.prototype.decodeFromImageUrl=async()=>({getText:()=>'TD12345678'})}""")
  pg.locator('#tdV58Auto').check();pg.locator('#tdV58Create').check();pg.locator('#tdV58Photo').set_input_files(str(ROOT/'icon-512.png'));pg.wait_for_function('window.__photo===true && !tdLabel.busy')
  assert pg.locator('#tdScanInput').input_value()=='';last=pg.evaluate("__v58.filter(x=>x.name==='td_label_intake_v58').at(-1)");assert last['args']['p_confirmed'] is False;assert last['args']['p_payload']['allow_create'] is True

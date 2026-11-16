@@ -22,6 +22,7 @@ export function route(path, method, search) {
   const table=p.slice(9);if (!TABLES.has(table)) return false;
   return ['GET','HEAD'].includes(method) || (method==='POST'&&['td_customers','td_orders','td_parcels','td_payments','td_station_addresses'].includes(table)) || (method==='PATCH'&&['td_customers','td_station_addresses'].includes(table));
  }
+ if (p==='/storage/v1/object/sign/tengda-images') return method==='POST';
  if (p==='/storage/v1/object/list/tengda-images') return method==='POST';
  if (/^\/storage\/v1\/object\/sign\/tengda-images\/[a-zA-Z0-9_./-]+$/.test(p)) return ['GET','POST'].includes(method);
  if (/^\/storage\/v1\/object\/tengda-images\/[a-zA-Z0-9_./-]+$/.test(p)) return ['GET','HEAD','POST'].includes(method);
