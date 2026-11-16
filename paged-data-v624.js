@@ -17,7 +17,7 @@ function tdPagedPlaceholder(id){return '<section id="tdPagedList" data-list="'+i
 function tdPagedForm(id){
  if(!tdPagedActive(id)){
   const table=tdPagedTables[id];if(!table)return tdPagedOriginal[id]();
-  const original=data[table],state=tdPagedState(id),term=state.term.toLowerCase();const filtered=term?original.filter(x=>[x.name,x.phone,x.notes,x.item_name,x.tracking_no,x.description,x.direction,x.method,x.amount,x.customer_id?name(x.customer_id):''].some(v=>String(v||'').toLowerCase().includes(term))):original;
+  const original=data[table],state=tdPagedState(id),term=state.term.toLowerCase();const eligible=id==='orders'&&state.kind?original.filter(x=>orderType(x)===state.kind):original;const filtered=term?eligible.filter(x=>[x.name,x.phone,x.notes,x.item_name,x.tracking_no,x.description,x.direction,x.method,x.amount,x.customer_id?name(x.customer_id):''].some(v=>String(v||'').toLowerCase().includes(term))):eligible;
   data[table]=filtered.slice(state.offset,state.offset+tdPaged.size);let html;try{html=tdPagedOriginal[id]()}finally{data[table]=original}
   if(id==='customers')html=html.replace(/客户列表（正常 \d+ \/ 已归档 \d+）/,'客户列表（当前页）');
   state.next=state.offset+tdPaged.size<filtered.length;
@@ -35,7 +35,7 @@ function tdPagedForm(id){
 }
 customers=()=>tdPagedForm('customers');orders=()=>tdPagedForm('orders');parcels=()=>tdPagedForm('parcels');records=()=>tdPagedForm('records');payments=()=>tdPagedForm('payments');
 function tdPagedSearch(term){const state=tdPagedState();state.term=term.trim().slice(0,100);state.offset=0;clearTimeout(tdPaged.timers.get(page));state.token++;const target=page;tdPaged.timers.set(target,setTimeout(()=>{if(page===target){if(tdDataReady)render();else tdPagedLoad(target)}},300))}
-function tdPagedKind(kind){const s=tdPagedState();s.kind=kind;s.offset=0;tdPagedLoad(page)}
+function tdPagedKind(kind){clearTimeout(tdPaged.timers.get(page));const s=tdPagedState();s.kind=kind;s.offset=0;tdPagedLoad(page)}
 function tdPagedMove(delta){const s=tdPagedState();s.offset=Math.max(0,s.offset+delta*tdPaged.size);if(tdDataReady)render();else tdPagedLoad(page)}
 async function tdPagedCustomerSearch(term){const target=page,epoch=tdPaged.epoch;clearTimeout(tdPaged.timers.get('customer'));tdPaged.timers.set('customer',setTimeout(async()=>{
  const box=$('tdPagedCustomerStatus'),select=document.querySelector('#tdPageContent select[name="customer_id"]');if(!box||!select)return;
@@ -56,20 +56,25 @@ async function tdPagedLoad(id){
   if(s.term&&id==='records'){
    const found=await tdPagedRequest(db.from('td_customers').select('id').or('name.ilike.'+tdPagedQuote(s.term)+',phone.ilike.'+tdPagedQuote(s.term)).range(0,200));if(found.error)throw found.error;if(found.data?.length>200)throw Error('匹配客户过多，请缩小关键词');customerIds=(found.data||[]).map(x=>x.id);
   }
-  const tables=id==='records'?['td_orders','td_parcels','td_pickups']:[tdPagedTables[id]];
+  const tables=id==='records'?(s.kind==='包裹'?['td_parcels']:s.kind==='取件'?['td_pickups']:s.kind?['td_orders']:['td_orders','td_parcels','td_pickups']):[tdPagedTables[id]];
   const results=await Promise.all(tables.map(async table=>{
    const field=table==='td_parcels'?'arrived_at':table==='td_pickups'?'picked_at':'created_at';
    let q=db.from(table).select('*').order(field,{ascending:false}).order('id',{ascending:false});
+   let filters=[];
    if(s.term){const fields=table==='td_customers'?['name','phone','notes']:table==='td_orders'?['item_name','notes']:table==='td_parcels'?['tracking_no','description','notes']:['receiver_name','receiver_phone'];
-    let filters=fields.map(f=>f+'.ilike.'+tdPagedQuote(s.term));if(customerIds.length)filters.push('customer_id.in.('+customerIds.join(',')+')');q=q.or(filters.join(','));
+    filters=fields.map(f=>f+'.ilike.'+tdPagedQuote(s.term));if(customerIds.length)filters.push('customer_id.in.('+customerIds.join(',')+')');
    }
+   if(table==='td_orders'&&['代买','代付','未分类'].includes(s.kind)){
+    const kind=s.kind==='未分类'?'or(notes.is.null,and(notes.not.like.'+JSON.stringify('[代买]%')+',notes.not.like.'+JSON.stringify('[代付]%')+'))':'notes.like.'+JSON.stringify('['+s.kind+']%');
+    q=q.or(filters.length?'and('+kind+',or('+filters.join(',')+'))':kind);
+   }else if(filters.length)q=q.or(filters.join(','));
    const r=await tdPagedRequest(q.range(s.offset,s.offset+tdPaged.size));if(r.error)throw r.error;
    return {table,next:(r.data||[]).length>tdPaged.size,rows:(r.data||[]).slice(0,tdPaged.size).filter(x=>!tdPagedHidden(table,x)).map(x=>({...x,__table:table}))};
   }));
   const rows=results.flatMap(x=>x.rows),names=await tdPagedNames(rows);
   if(epoch!==tdPaged.epoch||actor!==user?.id||token!==s.token||!box.isConnected||page!==id)return;
   for(const result of results)tdPagedRemember(result.table,result.rows);if(id!=='customers')tdPagedRemember('td_customers',names);
-  tdCustomerLookup=names; s.rows=rows;s.names=names;s.loadedAt=Date.now();s.next=results.some(x=>x.next);s.loaded=true;tdPagedPaint(id);tdPagedDetail();box.removeAttribute('aria-busy');
+  tdCustomerLookup=names; s.rows=rows;s.names=names;s.loadedAt=Date.now();s.next=results.some(x=>x.next);s.loaded=true;tdPagedPaint(id);if(id==='orders'&&$('orderFilter'))$('orderFilter').value=s.kind;tdPagedDetail();box.removeAttribute('aria-busy');
  }catch(e){if(box.isConnected&&token===s.token&&epoch===tdPaged.epoch){box.removeAttribute('aria-busy');box.innerHTML='<p role="alert">列表读取失败：'+esc(e.message)+'</p><button class="secondary" onclick="tdPagedLoad(page)">重试</button>'}}
 }
 function tdPagedPaint(id){
@@ -83,8 +88,8 @@ function tdPagedPaint(id){
  if(id==='records')content='<div class="scroll"><table><tr><th>类型</th><th>姓名</th><th>内容</th><th>数量</th>'+(role==='owner'?'<th>管理</th>':'')+'</tr>'+s.rows.filter(x=>!s.kind||s.kind===(x.__table==='td_orders'?orderType(x):x.__table==='td_parcels'?'包裹':'取件')).map(x=>'<tr><td>'+esc(x.__table==='td_orders'?orderType(x):x.__table==='td_parcels'?'包裹':'取件')+'</td><td>'+esc(x.customer_id?name(x.customer_id):x.receiver_name)+'</td><td>'+esc(x.item_name||x.tracking_no||x.description||x.receiver_phone)+'</td><td>'+esc(x.quantity||x.pieces||'')+'</td>'+(role==='owner'?'<td><button class="secondary danger" onclick="tdDeleteHistoricalRecord(\''+x.__table+'\',\''+esc(x.id)+'\')">删除</button></td>':'')+'</tr>').join('')+'</table></div>';
  box.innerHTML=content+'<div class="td-action-row"><button class="secondary" '+(!s.offset?'disabled':'')+' onclick="tdPagedMove(-1)">上一页</button><span>第 '+(s.offset/tdPaged.size+1)+' 页</span><button class="secondary" '+(!s.next?'disabled':'')+' onclick="tdPagedMove(1)">下一页</button></div><p class="muted">'+(id==='records'?'每类':'每页')+'最多50条；隐藏记录不显示，统计报表另行完整读取。</p>';
 }
-filterRecords=function(){if(tdPagedActive('records')){const s=tdPagedState('records');s.kind=$('recordKind')?.value||'';tdPagedPaint('records');return}return tdPagedOriginal.filterRecords()};
-filterOrderRows=function(){return tdPagedOriginal.filterOrderRows()};
+filterRecords=function(){if(tdPagedActive('records')){const s=tdPagedState('records');if($('recordKind'))$('recordKind').value=s.kind;tdPagedPaint('records');return}return tdPagedOriginal.filterRecords()};
+filterOrderRows=function(){clearTimeout(tdPaged.timers.get('orders'));const state=tdPagedState('orders');state.kind=$('orderFilter')?.value||'';state.offset=0;if(tdDataReady)render();else tdPagedLoad('orders')};
 // Related orders require ALL records for the selected customer, including multi-order links.
 let tdPagedRelationToken=0;
 tdParcelOrderChoices=function(){
@@ -97,9 +102,9 @@ tdParcelOrderChoices=function(){
   data.td_orders=orders.filter(x=>!tdPagedHidden('td_orders',x));data.td_parcels=parcels.filter(x=>!tdPagedHidden('td_parcels',x));const count=$('tdParcelPieces'),manual=count?.dataset.manual==='1',value=count?.value;tdPagedOriginal.tdParcelOrderChoices();if(manual&&count){count.value=value;count.dataset.manual='1'}
  }).catch(e=>{if(box.isConnected&&token===tdPagedRelationToken)box.textContent='关联订单读取失败：'+e.message});
 };
-function tdPagedMount(){if(!tdPagedActive())return;const state=tdPagedState();if(state.loaded&&Date.now()-state.loadedAt<30000){
+function tdPagedMount(){if(page==='orders'&&$('orderFilter'))$('orderFilter').value=tdPagedState('orders').kind;if(!tdPagedActive())return;const state=tdPagedState();if(state.loaded&&Date.now()-state.loadedAt<30000){
  for(const table of (page==='records'?['td_orders','td_parcels','td_pickups']:[tdPagedTables[page]]))tdPagedRemember(table,state.rows.filter(x=>x.__table===table));
- if(page!=='customers')tdPagedRemember('td_customers',state.names||[]);tdCustomerLookup=state.names||[];tdPagedPaint(page);tdPagedDetail();
+ if(page!=='customers')tdPagedRemember('td_customers',state.names||[]);tdCustomerLookup=state.names||[];tdPagedPaint(page);if(page==='orders'&&$('orderFilter'))$('orderFilter').value=state.kind;tdPagedDetail();
  }else tdPagedLoad(page)}
 
 // Direct edit links must work even when the target customer is outside the first page.

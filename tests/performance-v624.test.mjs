@@ -15,3 +15,7 @@ test('PWA never intercepts auth, RPC, signed photos, mutations or cross-origin r
  const handlers={};const ctx=vm.createContext({URL,Set,AbortController,Response,setTimeout,clearTimeout,self:{location:{origin:'https://station.test'},addEventListener:(name,cb)=>handlers[name]=cb}});vm.runInContext(readFileSync('sw.js','utf8'),ctx);
  for(const [url,method] of [['https://station.test/api/supabase/rest/v1/td_orders','GET'],['https://station.test/api/supabase/storage/v1/object/sign/tengda-images/a?token=synthetic','GET'],['https://station.test/','POST'],['https://other.test/','GET'],['https://station.test/release.json','GET']])handlers.fetch({request:{url,method,mode:'cors'},respondWith(){assert.fail('Sensitive/dynamic request must not be cached')}});
 });
+
+test('successful photo intake invalidates list caches before applying the authoritative result',()=>{
+ const source=readFileSync('live-ui-v59.js','utf8').match(/function tdV59Apply\(r\)\{[^\n]+/)[0];let resets=0;const ctx=vm.createContext({data:{td_parcels:[],td_customers:[]},tdPagedReset(){resets++}});vm.runInContext(source,ctx);ctx.tdV59Apply(null);assert.equal(resets,0);ctx.tdV59Apply({customer:{id:'c'},parcel:{id:'p',pieces:1}});assert.equal(resets,1);assert.equal(ctx.data.td_parcels.length,1);ctx.tdV59Apply({customer:{id:'c'},parcel:{id:'p',pieces:2}});assert.equal(resets,2);assert.equal(ctx.data.td_parcels.length,1);assert.equal(ctx.data.td_parcels[0].pieces,2);assert.equal(ctx.data.td_customers.length,1);
+});

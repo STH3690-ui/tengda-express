@@ -6,7 +6,7 @@ Baseline: V62.3 main `02b057bab161e58032fddf4fd95ccb17ab368add`. Measured 2026-1
 
 - ZXing and Tesseract scripts load only when a barcode/image consumer asks for them. Failed downloads can retry; concurrent loads share one promise. The Chinese/English models, quality thresholds and reusable OCR worker are unchanged.
 - Login validates active membership and permissions before displaying the workspace. The workspace does not wait for business history. Unloaded overview values display `—`, never false zero totals.
-- Customers, orders, parcels and business record search fetch at most 51 rows per source (50 visible plus a next-page sentinel), with stable date/ID ordering, server search, 300 ms debounce, timeout, private per-session cache and stale-result rejection. Record search pages each source independently. Empty pages can occur when hidden rows are excluded; continue with Next.
+- Customers, orders, parcels and business record search fetch at most 51 rows per source (50 visible plus a next-page sentinel), with stable date/ID ordering, server search and global order/category filtering before pagination, 300 ms debounce, timeout, private per-session cache and stale-result rejection. Successful photo intake immediately invalidates cached lists. Record search pages each source independently. Empty pages can occur when hidden rows are excluded; continue with Next.
 - Related orders/parcels load completely **for the selected customer**, including historical multi-order parcel links. Limits fail visibly instead of silently declaring a partial relation complete.
 - Financial/settlement/report views retain a separate complete snapshot. Six independent table reads and visibility reads run concurrently. Concurrent refreshes share the same request, and session changes prevent old results from repopulating a signed-out view. Existing full-read safety limits are retained. Financial exports and totals never use list-page subsets.
 - After a full snapshot, business/payment lists still render only 50 records per page. Legacy customer/order selectors and accounting snapshots can remain large; this release does not claim constant memory for arbitrarily large financial history.
@@ -47,7 +47,7 @@ At 4× CPU slowdown, customer/order/parcel pages were approximately 252/327/295 
 
 ## Validation and boundaries
 
-- `npm test`: 191 passed; `npm run check`: passed.
+- `npm test`: 192 passed; `npm run check`: passed.
 - Disposable local PostgreSQL: V57–V62 schema, RLS, anonymous/staff isolation, duplicate protection, concurrency, freight/debt calculations and late-failure rollback passed. No production SQL migration or business writes are part of this release.
 - Chromium/WebKit: paginated built bundle with 1,205-row fixtures, server search, customer relations, complete financial snapshots, duplicate refresh rejection, stale-session cancellation and initial staff permissions.
 - Existing barcode/photo/manual intake, pickup, navigation, customer/order relations and deletion protections are regression tested with mocked transport; production data is not used as test fixtures.
