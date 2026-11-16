@@ -20,9 +20,9 @@ function estimateAngle(image){
  if(points.length<80)return 0;const scores=[];for(let a=-6;a<=6;a+=.5){const r=a*Math.PI/180,c=Math.cos(r),s=Math.sin(r),bins=new Uint32Array(w+h+4);for(const [x,y] of points){const row=Math.round(y*c-x*s)+(w+h)/2|0;if(row>=0&&row<bins.length)bins[row]++}let score=0;for(let i=0;i<bins.length-1;i++){const n=bins[i]+bins[i+1];score+=n*n;}scores.push({a,score})}
  const zero=scores.find(x=>x.a===0),best=scores.reduce((a,b)=>a.score>b.score?a:b);return best.score>zero.score*1.025?best.a:0;
 }
-function prepare(source,variant){
+function prepare(source,variant,options={}){
  const probe=document.createElement('canvas'),s=Math.min(1,600/source.width,400/source.height);probe.width=Math.max(1,Math.round(source.width*s));probe.height=Math.max(1,Math.round(source.height*s));const pc=probe.getContext('2d',{willReadFrequently:true});pc.drawImage(source,0,0,probe.width,probe.height);const angle=variant==='raw'?0:estimateAngle(pc.getImageData(0,0,probe.width,probe.height));probe.width=probe.height=1;
- const r=angle*Math.PI/180,c=Math.abs(Math.cos(r)),si=Math.abs(Math.sin(r)),rw=source.width*c+source.height*si,rh=source.height*c+source.width*si,scale=Math.min(2800/rw,2000/rh,Math.max(1,1800/rw));
+ const r=angle*Math.PI/180,c=Math.abs(Math.cos(r)),si=Math.abs(Math.sin(r)),rw=source.width*c+source.height*si,rh=source.height*c+source.width*si,scale=Math.min(2800/rw,2000/rh,Number.isFinite(options.scale)?Math.max(.25,Math.min(2,options.scale)):Math.max(1,1800/rw));
  const out=document.createElement('canvas');out.width=Math.max(1,Math.round(rw*scale));out.height=Math.max(1,Math.round(rh*scale));const ctx=out.getContext('2d',{willReadFrequently:true});ctx.fillStyle='white';ctx.fillRect(0,0,out.width,out.height);ctx.save();ctx.translate(out.width/2,out.height/2);ctx.rotate(-r);ctx.scale(scale,scale);ctx.drawImage(source,-source.width/2,-source.height/2);ctx.restore();
  if(variant!=='raw'){
   const im=ctx.getImageData(0,0,out.width,out.height),gray=new Uint8Array(out.width*out.height),hist=new Uint32Array(256);for(let i=0;i<gray.length;i++){gray[i]=Math.round(im.data[i*4]*.299+im.data[i*4+1]*.587+im.data[i*4+2]*.114);hist[gray[i]]++}

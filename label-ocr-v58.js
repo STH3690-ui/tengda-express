@@ -4,14 +4,14 @@ async function stop(){epoch++;workerGeneration++;const cancel=cancelRun;cancelRu
 let loading=null,workerGeneration=0;
 async function ensureWorker(progress=()=>{}){
  if(worker)return worker;const generation=workerGeneration;if(loading&&loading.generation===generation)return loading.promise;
- const promise=(async()=>{await TDAssets.ocr();if(generation!==workerGeneration)throw Error('识别已取消');const next=await Tesseract.createWorker('chi_sim+eng',1,{workerPath:'/vendor/tesseract-v6/worker.min.js',corePath:'/vendor/tesseract-v6/tesseract-core-lstm.js',langPath:'/vendor/tesseract-v6/lang',workerBlobURL:false,logger:m=>progress(m.status,Math.round((m.progress||0)*100))});if(generation!==workerGeneration){await next.terminate();throw Error('识别已取消')}worker=next;return next})();loading={generation,promise};try{return await promise}finally{if(loading?.promise===promise)loading=null}
+ const promise=(async()=>{await TDAssets.ocr();if(generation!==workerGeneration)throw Error('识别已取消');const next=await Tesseract.createWorker('chi_sim+eng',1,{workerPath:'/vendor/tesseract-v6/worker.min.js',corePath:'/vendor/tesseract-v6',langPath:'/vendor/tesseract-v6/lang',workerBlobURL:false,logger:m=>progress(m.status,Math.round((m.progress||0)*100))});if(generation!==workerGeneration){await next.terminate();throw Error('识别已取消')}worker=next;return next})();loading={generation,promise};try{return await promise}finally{if(loading?.promise===promise)loading=null}
 }
 async function canvasJob(canvas,progress,current,options={}){
- const active=await ensureWorker(progress);if(current!==epoch)throw Error('识别已取消');await active.setParameters({tessedit_pageseg_mode:String(options.psm||3)});
- if(current!==epoch)throw Error('识别已取消');const result=await active.recognize(canvas,{}, {text:true,blocks:true});
+ const loadingStarted=performance.now();const active=await ensureWorker(progress);const workerReadyMs=performance.now()-loadingStarted;if(current!==epoch)throw Error('识别已取消');await active.setParameters({tessedit_pageseg_mode:String(options.psm||3)});
+ if(current!==epoch)throw Error('识别已取消');const recognizedAt=performance.now();const result=await active.recognize(canvas,{}, {text:true,blocks:true});
  if(current!==epoch)throw Error('识别已取消');
- const words=(result.data.blocks||[]).flatMap(b=>(b.paragraphs||[]).flatMap(p=>(p.lines||[]).flatMap(l=>l.words||[]))).filter(w=>/[\p{L}\d]/u.test(w.text||'')).map(w=>({text:w.text,confidence:Number(w.confidence)||0}));
- return {text:result.data.text||'',confidence:Number(result.data.confidence)||0,minConfidence:words.length?Math.min(...words.map(w=>w.confidence)):0,words};
+ const words=(result.data.blocks||[]).flatMap(b=>(b.paragraphs||[]).flatMap(p=>(p.lines||[]).flatMap(l=>l.words||[]))).filter(w=>/[\p{L}\p{N}]/u.test(w.text||'')).map(w=>({text:w.text,confidence:Number(w.confidence)||0,bbox:w.bbox?{x0:w.bbox.x0,y0:w.bbox.y0,x1:w.bbox.x1,y1:w.bbox.y1}:null}));
+ return {text:result.data.text||'',confidence:Number(result.data.confidence)||0,minConfidence:words.length?Math.min(...words.map(w=>w.confidence)):0,words,timing:{worker_ready_ms:Math.round(workerReadyMs),recognize_ms:Math.round(performance.now()-recognizedAt)}};
 }
 async function run(makeCanvas,onProgress,timeout,options={}){
  if(busy)throw Error('正在识别，请等待');busy=true;const current=++epoch;let timer,cleanup=()=>{};const cancelled=new Promise((_,reject)=>{cancelRun=()=>reject(Error('识别已取消'))});

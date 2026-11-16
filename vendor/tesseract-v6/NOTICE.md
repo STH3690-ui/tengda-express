@@ -10,3 +10,5 @@ Models and workers are served from this site's own origin. Runtime OCR receives 
 SHA256SUMS records the shipped asset bytes; update it whenever vendored assets change.
 
 The core uses the upstream non-embedded LSTM loader (.js plus same-origin .wasm), avoiding a data-URL fetch that WebKit rejects under connect-src self. No broad data: connection exemption is needed.
+
+V63 candidate also includes upstream 6.1.2 SIMD LSTM .wasm and a non-embedded loader alias. Directory corePath enables upstream SIMD feature detection with scalar fallback; both aliases use same-origin external .wasm, never data URLs. Recognition models are unchanged.

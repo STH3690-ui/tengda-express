@@ -58,6 +58,9 @@ jobs:
       - run: TD_TEST_DIST=1 TD_BROWSER_ENGINE=webkit python tests/browser_v62.py
       - run: python tests/browser_v58.py
       - run: TD_BROWSER_ENGINE=webkit python tests/browser_v58.py
+      - run: timeout 180s python tests/browser_v63_ocr.py
+      - run: TD_BROWSER_ENGINE=webkit timeout 180s python tests/browser_v63_ocr.py
+      - run: timeout 180s python tests/browser_v63_ocr.py --scalar
       - run: timeout 240s python tests/browser_v61_ocr.py
       - run: TD_BROWSER_ENGINE=webkit timeout 240s python tests/browser_v61_ocr.py
       - run: python tests/browser_v58_ocr.py
