@@ -49,6 +49,8 @@ with sync_playwright() as p:
  page.evaluate("async()=>{__fail='td_payments';await refresh()}");assert page.evaluate('data.td_payments.length')==1205;page.evaluate("__fail='';tdUiSaved()")
  # Direct edit links fetch their authorized target even outside the first 50 rows.
  page.reload();page.evaluate("async()=>{location.hash='#/customers/edit/'+__fixtures.td_customers[1204].id;user={id:'owner'};await enter()}");page.wait_for_function("()=>document.querySelector('#customerForm input[name=name]')?.value==='客户1205'");assert not page.evaluate('__reads.some(x=>x.table==="td_payments")')
+ # Photo intake updates must invalidate cached lists immediately, without waiting for the TTL.
+ page.evaluate("()=>{tdUiSaved();tdNavigate('home');const customer={id:'00000000-0000-4000-8000-000000099999',name:'新增入库客户',phone:'09999990000',created_at:new Date().toISOString()};__fixtures.td_customers.unshift(customer);tdV59Apply({customer});tdNavigate('customers')}");page.wait_for_function("()=>tdPagedState().loaded&&tdPagedState().rows.some(x=>x.name==='新增入库客户')")
  # Membership permissions are available before the first data snapshot for real staff login.
  page.reload();page.evaluate("async()=>{__role='staff';user={id:'staff'};await enter();tdNavigate('home')}");assert page.locator('[data-route="parcels"]').is_visible();assert page.locator('[data-route="staff"]').count()==0;assert page.locator('[data-route="dashboard"]').count()==0
  page.evaluate('async()=>{__delay=75;const task=refresh();tdClearSessionView();await task}');assert page.evaluate('user===null && Object.values(data).every(x=>x.length===0)')

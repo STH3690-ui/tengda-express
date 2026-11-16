@@ -47,6 +47,6 @@ async function tdV59Commit(manual=false){
  }catch(e){tdLive.edited=true;tdV59Message((tdLive.pending?'结果待核实，请先核实上次入库：':'需要人工核对：')+e.message)}
  finally{tdLive.busy=false;tdNav.pending=Math.max(0,tdNav.pending-1);if($('tdLiveName'))$('tdLiveName').disabled=$('tdLivePhone').disabled=false}
 }
-function tdV59Apply(r){if(!r)return;if(r.parcel){const i=data.td_parcels.findIndex(x=>x.id===r.parcel.id);if(i<0)data.td_parcels.unshift(r.parcel);else data.td_parcels[i]=r.parcel}if(r.customer&&!data.td_customers.some(x=>x.id===r.customer.id))data.td_customers.unshift(r.customer);}
+function tdV59Apply(r){if(!r)return;if(typeof tdPagedReset==='function')tdPagedReset();if(r.parcel){const i=data.td_parcels.findIndex(x=>x.id===r.parcel.id);if(i<0)data.td_parcels.unshift(r.parcel);else data.td_parcels[i]=r.parcel}if(r.customer&&!data.td_customers.some(x=>x.id===r.customer.id))data.td_customers.unshift(r.customer);}
 async function tdV59Resolve(){if(!tdLive.pending||tdLive.busy||!navigator.onLine)return;tdLive.busy=true;tdNav.pending++;try{const r=await tdScanRpc('td_live_request_v59',{p_request:tdLive.pending});tdV59Pending(null);tdV59Apply(r);tdLive.edited=true;tdV59Message(r?'上次已入库：'+(r.parcel_number||r.tracking_no)+'。不要重复登记；下一件请重新核对':'上次未入库，迟到请求已封存。请重新核对后入库');}catch(e){tdV59Message('仍待核实：'+e.message)}finally{tdLive.busy=false;tdNav.pending=Math.max(0,tdNav.pending-1)}}
 addEventListener('pagehide',()=>tdV59Stop(true));document.addEventListener('visibilitychange',()=>{if(document.hidden)tdV59Stop()});
