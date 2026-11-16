@@ -4,7 +4,7 @@ const tdPaged={size:50,states:new Map(),visibility:null,visibilityAt:0,epoch:0,t
 const tdPagedTables={customers:'td_customers',orders:'td_orders',parcels:'td_parcels',records:null,payments:'td_payments'};
 const tdPagedOriginal={customers,orders,parcels,records,payments,filterRecords,filterOrderRows,tdParcelOrderChoices};
 function tdPagedActive(id=page){return id!=='payments'&&!tdDataReady&&Object.hasOwn(tdPagedTables,id)}
-function tdPagedReset(){tdPaged.epoch++;tdPaged.states.clear();tdPaged.visibility=null;tdPaged.visibilityAt=0;for(const timer of tdPaged.timers.values())clearTimeout(timer);tdPaged.timers.clear();}
+function tdPagedReset(){if(typeof tdHomeSummary!=='undefined')tdHomeSummaryReset();tdPaged.epoch++;tdPaged.states.clear();tdPaged.visibility=null;tdPaged.visibilityAt=0;for(const timer of tdPaged.timers.values())clearTimeout(timer);tdPaged.timers.clear();}
 function tdPagedState(id=page){if(!tdPaged.states.has(id))tdPaged.states.set(id,{offset:0,term:'',kind:'',rows:[],next:false,loaded:false,token:0});return tdPaged.states.get(id)}
 async function tdPagedRequest(query){const controller=new AbortController();let timer;try{return await Promise.race([typeof query.abortSignal==='function'?query.abortSignal(controller.signal):query,new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(Error('读取超时，请重试'))},20000)})])}finally{clearTimeout(timer)}}
 function tdPagedHidden(table,row){return (table==='td_customers'&&role!=='owner'&&!!row.deleted_at)||hiddenBusinessIds.has(table+':'+row.id)||(table==='td_orders'&&hiddenOrderIds.has(row.id))||(table==='td_parcels'&&hiddenParcelIds.has(row.id))||(page==='records'&&hiddenAuditIds.has(table+':'+row.id))}
@@ -102,7 +102,7 @@ tdParcelOrderChoices=function(){
   data.td_orders=orders.filter(x=>!tdPagedHidden('td_orders',x));data.td_parcels=parcels.filter(x=>!tdPagedHidden('td_parcels',x));const count=$('tdParcelPieces'),manual=count?.dataset.manual==='1',value=count?.value;tdPagedOriginal.tdParcelOrderChoices();if(manual&&count){count.value=value;count.dataset.manual='1'}
  }).catch(e=>{if(box.isConnected&&token===tdPagedRelationToken)box.textContent='关联订单读取失败：'+e.message});
 };
-function tdPagedMount(){if(page==='orders'&&$('orderFilter'))$('orderFilter').value=tdPagedState('orders').kind;if(!tdPagedActive())return;const state=tdPagedState();if(state.loaded&&Date.now()-state.loadedAt<30000){
+function tdPagedMount(){tdHomeSummaryMount();if(page==='orders'&&$('orderFilter'))$('orderFilter').value=tdPagedState('orders').kind;if(!tdPagedActive())return;const state=tdPagedState();if(state.loaded&&Date.now()-state.loadedAt<30000){
  for(const table of (page==='records'?['td_orders','td_parcels','td_pickups']:[tdPagedTables[page]]))tdPagedRemember(table,state.rows.filter(x=>x.__table===table));
  if(page!=='customers')tdPagedRemember('td_customers',state.names||[]);tdCustomerLookup=state.names||[];tdPagedPaint(page);if(page==='orders'&&$('orderFilter'))$('orderFilter').value=state.kind;tdPagedDetail();
  }else tdPagedLoad(page)}
@@ -118,4 +118,31 @@ async function tdPagedDetail(){
   data.td_customers=[...data.td_customers,row];tdOriginalViews.editCustomer(row.id);tdCaptureBaseline();
  }catch(e){if(form.isConnected&&epoch===tdPaged.epoch)notify('客户读取失败：'+e.message,true)}
  finally{controls.forEach((x,i)=>x.disabled=disabled[i])}
+}
+
+// Independent overview: read only IDs, deletion flags and remaining pieces, never financial history.
+const tdHomeSummary={values:null,at:0,epoch:0,pending:null,timer:null,error:''};
+function tdHomeSummaryReset(){tdHomeSummary.epoch++;tdHomeSummary.values=null;tdHomeSummary.at=0;tdHomeSummary.pending=null;tdHomeSummary.error='';clearTimeout(tdHomeSummary.timer);tdHomeSummary.timer=null}
+function tdHomeSummaryPaint(){
+ if(page!=='home'||!user)return;const box=document.querySelector('.td-home-overview'),status=$('tdHomeSummaryStatus');
+ if(box&&tdHomeSummary.values&&!tdDataReady){const values=tdHomeSummary.values;box.querySelectorAll('b').forEach((el,i)=>{if(el.firstChild)el.firstChild.nodeValue=String([values.customers,values.remaining,values.orders][i])})}
+ if(status)status.innerHTML=tdHomeSummary.error?'概览读取失败：'+esc(tdHomeSummary.error)+' <button type="button" class="secondary" onclick="tdHomeSummaryLoad()">重试</button>':(!tdDataReady&&!tdHomeSummary.values?'正在更新概览…':'');
+}
+async function tdHomeSummaryLoad(){
+ if(!user)return;if(tdHomeSummary.pending)return tdHomeSummary.pending;
+ const actor=user.id,epoch=tdHomeSummary.epoch;tdHomeSummary.error='';tdHomeSummaryPaint();
+ const task=(async()=>{
+  const read=async(table,columns,sort='id')=>{const rows=[];for(let offset=0;offset<100000;offset+=1000){const r=await tdPagedRequest(db.from(table).select(columns).order(sort).range(offset,offset+999));if(r.error)throw Error(r.error.message);rows.push(...(r.data||[]));if((r.data||[]).length<1000)return rows}throw Error('概览记录过多，请打开统计报表核对')};
+  try{
+   const [customers,parcels,orders,visibility]=await Promise.all([read('td_customers','id,deleted_at'),read('td_parcels','id,remaining'),read('td_orders','id'),Promise.all([read('td_order_hidden_v41','order_id','order_id'),read('td_parcel_hidden_v51','parcel_id','parcel_id'),tdReadBusinessHidden()]).then(([orders,parcels,business])=>({orders,parcels,business}))]);
+   if(actor!==user?.id||epoch!==tdHomeSummary.epoch)return;
+   const hidden=visibility.business,orderIds=new Set(visibility.orders.map(x=>x.order_id)),parcelIds=new Set(visibility.parcels.map(x=>x.parcel_id));
+   tdHomeSummary.values={customers:customers.filter(x=>!x.deleted_at&&!hidden.has('td_customers:'+x.id)).length,remaining:parcels.filter(x=>!parcelIds.has(x.id)&&!hidden.has('td_parcels:'+x.id)).reduce((s,x)=>s+Math.max(0,Number(x.remaining)||0),0),orders:orders.filter(x=>!orderIds.has(x.id)&&!hidden.has('td_orders:'+x.id)).length};tdHomeSummary.at=Date.now();tdHomeSummaryPaint();
+  }catch(e){if(actor===user?.id&&epoch===tdHomeSummary.epoch){tdHomeSummary.error=e.message;tdHomeSummaryPaint()}}
+ })();tdHomeSummary.pending=task;try{await task}finally{if(tdHomeSummary.pending===task)tdHomeSummary.pending=null}
+}
+function tdHomeSummaryMount(){
+ if(page!=='home'||tdDataReady)return;tdHomeSummaryPaint();if(tdHomeSummary.pending||tdHomeSummary.timer)return;
+ if(tdHomeSummary.values&&Date.now()-tdHomeSummary.at<30000)return;
+ tdHomeSummary.timer=setTimeout(()=>{tdHomeSummary.timer=null;if(page==='home'&&user)tdHomeSummaryLoad()},50);
 }

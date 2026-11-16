@@ -30,11 +30,11 @@ function tdNavIcon(kind){return tdIconHTML(kind)}
 function tdNavTitle(id){return TD_NAV_ITEMS.find(x=>x[0]===id)?.[1]||({home:'导航主页',scanIntake:'扫码入库',scanQuery:'扫码查询',scanPickup:'扫码取件',scanHistory:'扫码记录',payments:'收付款流水',deletions:'删除历史',cleanup:'过期清理'})[id]||'导航主页'}
 function tdNavCard(item){return '<button type="button" class="td-function-card" data-route="'+item[0]+'" onclick="tdNavigate(\''+item[0]+'\')">'+tdNavIcon(item[2])+'<span>'+esc(item[1])+'</span><small>'+esc(item[3])+'</small></button>'}
 function tdHomePage(){
- const customers=tdDataReady?data.td_customers.filter(x=>!x.deleted_at).length:'—';
- const remaining=tdDataReady?data.td_parcels.reduce((s,x)=>s+Math.max(0,Number(x.remaining)||0),0):'—';
- const orders=tdDataReady?data.td_orders.filter(x=>!hiddenOrderIds.has(x.id)).length:'—';
+ const customers=tdDataReady?data.td_customers.filter(x=>!x.deleted_at).length:(typeof tdHomeSummary!=='undefined'?tdHomeSummary.values?.customers??'—':'—');
+ const remaining=tdDataReady?data.td_parcels.reduce((s,x)=>s+Math.max(0,Number(x.remaining)||0),0):(typeof tdHomeSummary!=='undefined'?tdHomeSummary.values?.remaining??'—':'—');
+ const orders=tdDataReady?data.td_orders.filter(x=>!hiddenOrderIds.has(x.id)).length:(typeof tdHomeSummary!=='undefined'?tdHomeSummary.values?.orders??'—':'—');
  return '<section class="td-home-heading"><div><p class="td-eyebrow">TENG DA · WORKSPACE</p><h2>工作主页</h2><p class="muted">'+(role==='owner'?'管理员工作台':'员工工作台')+' · 选择功能开始办理</p></div><span class="td-brand-speed" aria-hidden="true"></span></section>'+
- '<section class="td-home-overview" aria-label="简洁经营概览"><div><span>当前客户</span><b>'+customers+'<small> 人</small></b></div><div><span>待取件数</span><b>'+remaining+'<small> 件</small></b></div><div><span>有效订单</span><b>'+orders+'<small> 单</small></b></div></section>'+
+ '<section class="td-home-overview" aria-label="简洁经营概览"><div><span>当前客户</span><b>'+customers+'<small> 人</small></b></div><div><span>待取件数</span><b>'+remaining+'<small> 件</small></b></div><div><span>有效订单</span><b>'+orders+'<small> 单</small></b></div></section><p id="tdHomeSummaryStatus" class="muted" role="status"></p>'+
  (tdNavPermission('parcel_create')?'<button class="td-live-launch" onclick="tdNavigate(\'scanIntake\')"><strong>高清拍照入库</strong><span>手动快门 · 原始高清 · 本机识别</span></button>':'')+
  '<h3 class="td-functions-title">全部功能</h3><section class="td-function-grid" aria-label="全部功能">'+tdVisibleNav().map(tdNavCard).join('')+'</section>';
 }
