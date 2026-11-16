@@ -12,6 +12,7 @@ async function tdV58ReadPhoto(input){
   if(epoch!==tdLabel.epoch||page!=='scanIntake')return;
   $('tdV58Text').value=result.text;tdLabel.evidence={...result,edited:false,barcode:''};
   // Independent decoder corroboration is mandatory for automatic tracking-number writes.
+  await TDAssets.barcode();
   const url=URL.createObjectURL(file);const reader=new ZXing.BrowserMultiFormatReader();
   try{const decoded=await reader.decodeFromImageUrl(url);tdLabel.evidence.barcode=TDScanCore.normalize(decoded.getText())}catch{}finally{reader.reset();URL.revokeObjectURL(url)}
   await tdV58Preview(true);

@@ -80,3 +80,16 @@
   Cache-Control: no-cache
 /unified-v623.css
   Cache-Control: no-cache
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+/vendor/*
+  Cache-Control: public, max-age=86400
+/sw.js
+  Cache-Control: no-cache
+/
+  Cache-Control: no-cache
+/brand-mark.webp
+  Cache-Control: public, max-age=86400
+/tengda-header.webp
+  Cache-Control: public, max-age=86400

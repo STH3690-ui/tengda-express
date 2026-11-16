@@ -30,9 +30,9 @@ function tdNavIcon(kind){return tdIconHTML(kind)}
 function tdNavTitle(id){return TD_NAV_ITEMS.find(x=>x[0]===id)?.[1]||({home:'导航主页',scanIntake:'扫码入库',scanQuery:'扫码查询',scanPickup:'扫码取件',scanHistory:'扫码记录',payments:'收付款流水',deletions:'删除历史',cleanup:'过期清理'})[id]||'导航主页'}
 function tdNavCard(item){return '<button type="button" class="td-function-card" data-route="'+item[0]+'" onclick="tdNavigate(\''+item[0]+'\')">'+tdNavIcon(item[2])+'<span>'+esc(item[1])+'</span><small>'+esc(item[3])+'</small></button>'}
 function tdHomePage(){
- const customers=data.td_customers.filter(x=>!x.deleted_at).length;
- const remaining=data.td_parcels.reduce((s,x)=>s+Math.max(0,Number(x.remaining)||0),0);
- const orders=data.td_orders.filter(x=>!hiddenOrderIds.has(x.id)).length;
+ const customers=tdDataReady?data.td_customers.filter(x=>!x.deleted_at).length:'—';
+ const remaining=tdDataReady?data.td_parcels.reduce((s,x)=>s+Math.max(0,Number(x.remaining)||0),0):'—';
+ const orders=tdDataReady?data.td_orders.filter(x=>!hiddenOrderIds.has(x.id)).length:'—';
  return '<section class="td-home-heading"><div><p class="td-eyebrow">TENG DA · WORKSPACE</p><h2>工作主页</h2><p class="muted">'+(role==='owner'?'管理员工作台':'员工工作台')+' · 选择功能开始办理</p></div><span class="td-brand-speed" aria-hidden="true"></span></section>'+
  '<section class="td-home-overview" aria-label="简洁经营概览"><div><span>当前客户</span><b>'+customers+'<small> 人</small></b></div><div><span>待取件数</span><b>'+remaining+'<small> 件</small></b></div><div><span>有效订单</span><b>'+orders+'<small> 单</small></b></div></section>'+
  (tdNavPermission('parcel_create')?'<button class="td-live-launch" onclick="tdNavigate(\'scanIntake\')"><strong>高清拍照入库</strong><span>手动快门 · 原始高清 · 本机识别</span></button>':'')+
@@ -42,7 +42,7 @@ function tdNavLinks(items){return '<section class="td-hub-grid">'+items.filter(x
 function tdFinanceHub(){return '<h2>收款与欠款</h2>'+tdNavLinks([['payments','收付款流水','money','登记与查看收付款'],['pickups','欠款与还款','truck','取件页面查看实际余额']])}
 function tdEntryHub(){const links=[['customers','新增客户','users','客户登记','customer_create'],['parcels','包裹入库','box','到站登记','parcel_create'],['orders','录入订单','bag','代买代付','order_create'],['pickups','办理取件','truck','取件与结算','pickup_create'],['payments','登记收付款','money','收款付款流水','finance_create']].filter(x=>tdNavPermission(x[4]));return '<h2>员工录入</h2><p class="muted">选择已授权的日常业务。</p>'+tdNavLinks(links)+(links.length?'':'<p>当前暂无录入授权，请联系管理员。</p>')}
 function tdManagementHub(){return '<h2>记录管理</h2>'+tdNavLinks([['deletions','删除历史','trash','勾选历史并统一处理'],['cleanup','过期归档','archive','预览并归档过期记录'],['records','业务查询','search','搜索现有业务记录']])}
-function tdSettingsPage(){return '<h2>系统设置</h2><section class="photo-box"><h3>腾达快递站 V62.3</h3><p>'+esc(role==='owner'?'管理员':'员工')+' · '+esc(data.td_members.find(x=>x.id===user?.id)?.display_name||user?.email||'已登录')+'</p><label><input type="checkbox" id="tdLargeText" '+(document.documentElement.classList.contains('td-large-text')?'checked':'')+' onchange="tdSetLargeText(this.checked)"> 大字显示</label></section><div class="td-action-row"><button class="secondary" onclick="tdRefreshSafely()">刷新云数据</button>'+(role==='owner'?'<button class="secondary" onclick="tdNavigate(\'staff\')">账号与权限</button>':'')+'<button class="secondary danger" onclick="logout()">退出登录</button></div>'}
+function tdSettingsPage(){return '<h2>系统设置</h2><section class="photo-box"><h3>腾达快递站 V62.4</h3><p>'+esc(role==='owner'?'管理员':'员工')+' · '+esc(data.td_members.find(x=>x.id===user?.id)?.display_name||user?.email||'已登录')+'</p><label><input type="checkbox" id="tdLargeText" '+(document.documentElement.classList.contains('td-large-text')?'checked':'')+' onchange="tdSetLargeText(this.checked)"> 大字显示</label></section><div class="td-action-row"><button class="secondary" onclick="tdRefreshSafely()">刷新云数据</button>'+(role==='owner'?'<button class="secondary" onclick="tdNavigate(\'staff\')">账号与权限</button>':'')+'<button class="secondary danger" onclick="logout()">退出登录</button></div>'}
 function tdSetLargeText(on){document.documentElement.classList.toggle('td-large-text',on);try{localStorage.setItem('td-ui-large-text',on?'1':'0')}catch{}}
 function tdParseRoute(hash){
  const text=String(hash||'').replace(/^#\/?/,'');const parts=text.split('/').map(x=>{try{return decodeURIComponent(x)}catch{return ''}});
@@ -100,6 +100,10 @@ function tdRenderApp(){
  // Retain compatibility with existing callers that assign the original page IDs before render().
  if(page!==tdNav.route.page){tdNav.route={page};window.history.replaceState({tdNav:true,tdIndex:tdNav.index,route:tdNav.route},'',tdRouteHash(tdNav.route))}
  if(!tdCanOpen(page)){page='home';tdNav.route={page};window.history.replaceState({tdNav:true,tdIndex:tdNav.index,route:tdNav.route},'',tdRouteHash(tdNav.route))}
+ if(!tdDataReady&&!(typeof tdPagedActive==='function'&&tdPagedActive())&&!['home','settings','entry','finance','management','stations','scan','scanIntake','scanQuery','scanPickup','scanHistory'].includes(page)){
+  $('page').innerHTML=tdPageBackbar(tdNav.route)+'<section class="panel" role="status">正在读取业务数据…</section>';
+  refresh();return;
+ }
  const route={...tdNav.route},key=tdRouteKey(route),draft=tdNav.renderKey===key&&!tdNav.skipDraft&&tdHasUnsaved()?tdCaptureDraft():null;
  const detailBox=route.page==='parcels'?'photoArea':'orderPhotoArea',detailHTML=draft&&route.view==='photos'?$(detailBox)?.innerHTML:null;
  if(tdScanIsPage()&&tdNav.renderKey===key&&$('tdPageContent'))return;
@@ -115,6 +119,7 @@ function tdRenderApp(){
  if(route.view==='permissions'&&page==='staff')tdOriginalViews.tdPermissionsPanel(route.id);
  if(route.view==='photos'){if(detailHTML!==null&&$(detailBox))$(detailBox).innerHTML=detailHTML;else if(page==='parcels')tdOriginalViews.openPhotos(route.id);else if(page==='orders')tdOriginalViews.openOrderPhotos(route.id)}
  if(page==='stations')tdLoadStations().then(()=>{if(tdRouteKey(tdNav.route)!==key)return;if(route.view==='edit'&&!draft){tdOriginalViews.tdEditStation(route.id);tdCaptureBaseline()}});
+ if(typeof tdPagedMount==='function')tdPagedMount();
  tdDecorateFormFields();
  if(draft)tdRestoreDraft(draft);else tdCaptureBaseline();
 }

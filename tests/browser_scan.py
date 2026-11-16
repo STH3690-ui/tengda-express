@@ -32,7 +32,7 @@ with sync_playwright() as p:
  for fmt,expected in [('code128','TD12345678'),('code39','TD12345678'),('ean13','5901234123457'),('ean8','96385074'),('qrcode','TD12345678')]:
   import base64
   data=base64.b64encode(Path('/tmp/tengda-scan-fixtures/'+fmt+'.png').read_bytes()).decode()
-  got=pg.evaluate("async u=>{const reader=new ZXing.BrowserMultiFormatReader();const r=await reader.decodeFromImageUrl(u);reader.reset();return r.getText()}",'data:image/png;base64,'+data);assert got==expected,(fmt,got);decoded.append(fmt)
+  got=pg.evaluate("async u=>{await TDAssets.barcode();const reader=new ZXing.BrowserMultiFormatReader();const r=await reader.decodeFromImageUrl(u);reader.reset();return r.getText()}",'data:image/png;base64,'+data);assert got==expected,(fmt,got);decoded.append(fmt)
  def go(target):
   pg.evaluate('(target)=>tdNavigate(target)',target);pg.wait_for_function('tdScan.ready')
   if target=='scanIntake':
@@ -48,6 +48,7 @@ with sync_playwright() as p:
  scan('NEW00001');assert '未登记' in pg.locator('#tdScanQueryResult').inner_text()
  scan('https://bad.test/evil');assert '网址' in pg.locator('#tdScanMessage').inner_text()
  # Camera allow, rear preference, continuous callbacks, torch, camera switching and release.
+ pg.evaluate("async()=>{await TDAssets.barcode()}")
  pg.evaluate("""window.__stops=0;window.__torch=[];window.__track={stop(){__stops++},getCapabilities(){return {torch:true}},async applyConstraints(c){__torch.push(c)}};navigator.mediaDevices.getUserMedia=async opts=>{__gumCalls.push(opts);const stream=new MediaStream();stream.getTracks=()=>[__track];stream.getVideoTracks=()=>[__track];return stream};navigator.mediaDevices.enumerateDevices=async()=>[{kind:'videoinput',deviceId:'rear',label:'后置'},{kind:'videoinput',deviceId:'front',label:'前置'}];HTMLMediaElement.prototype.play=async()=>{};ZXing.BrowserMultiFormatReader.prototype.decodeFromStream=async(stream,video,cb)=>{window.__decode=cb};ZXing.BrowserMultiFormatReader.prototype.reset=()=>{};""")
  pg.get_by_role('button',name='开启摄像头',exact=True).click();pg.wait_for_function("!!tdScan.reader || document.getElementById('tdScanMessage').classList.contains('error')");assert pg.evaluate('!!tdScan.reader'),pg.locator('#tdScanMessage').inner_text();assert pg.evaluate('__gumCalls.at(-1).video.facingMode.ideal')=='environment'
  pg.locator('#tdScanTorch').click();assert pg.evaluate('__torch[0].advanced[0].torch') is True
