@@ -23,9 +23,9 @@ PIPELINE=r'''async()=>{
   for(const variant of ['raw','enhanced','binary']){
    const prep=TDPhotoV63.prepare(variant!=='raw'&&verification?verification:source,variant);
    try{const result=await TDLabelOCR.recognizeFrozen(prep.canvas,()=>{},{psm:variant==='binary'?11:6,timeout:10000}),parsed=TDPhotoV63.parse(result.text),evidence=TDPhotoV61.evidence(result,parsed);reads.push({variant,parsed,evidence,timing:result.timing});
-    if(variant==='raw'&&parsed.eligible)verification=TDPhotoV63.verificationRegion(result,parsed,prep.canvas,source);
+    if(variant==='raw'&&parsed.eligible&&!TDPhotoV63.fastAccept(reads.at(-1)))verification=TDPhotoV63.verificationRegion(result,parsed,prep.canvas,source);
     if(firstFillMs===null&&TDPhotoV63.fastAccept(reads.at(-1)))firstFillMs=Math.round(performance.now()-start);
-    if(TDPhotoV61.select(reads).automatic)break;
+    const choice=TDPhotoV61.select(reads);if(choice.automatic||(!choice.conflict&&TDPhotoV63.fastAccept(reads.at(-1))))break;
    }finally{prep.canvas.width=prep.canvas.height=1}
   }
   const choice=TDPhotoV61.select(reads);return {reads,best:choice.best?.parsed,automatic_proof:choice.automatic,conflict:choice.conflict,elapsed_ms:Math.round(performance.now()-start),first_fill_ms:firstFillMs,used_targeted_verification:!!verification};

@@ -1,6 +1,6 @@
 # V63 device OCR validation
 
-No layout/CSS, database schema, permissions, customer matching, finance, quantity, weight, notes or original-photo storage changes. No paid OCR service. Original automatic-intake server requirements remain unchanged.
+No layout/CSS, database schema, permissions, customer matching, finance, quantity, weight, notes or original-photo storage changes. No paid OCR service. The latest requested primary workflow is automatic filling followed by manual confirmation; server requirements remain unchanged.
 
 ## Implementation
 
@@ -11,11 +11,9 @@ No layout/CSS, database schema, permissions, customer matching, finance, quantit
 - Preserve real confidence when a word combines an address suffix with the name/phone, and preserve word bounding boxes. No confidence value is raised synthetically.
 - Initialize the existing worker upon entering photo intake, share initialization and reuse it between captures. Heavy engines/models are still absent from the login/home initial load. Tesseract.js 6.0.1 / core 6.1.2 / Chinese+English fast models remain pinned. Upstream SIMD detection selects a same-origin external SIMD WASM loader; scalar fallback is shipped and tested. CSP is unchanged; no data-URL or external OCR connection is added.
 
-## Automatic-intake gate review
+## Manual-intake decision (latest user instruction)
 
-The user explicitly requires automatic intake to remain. Therefore V63 does **not** stop after a single successful result if that would remove automatic intake, and it does not fake `agreement_count`, `ocr_variants` or manual confirmation. A first reliable result can fill fields immediately. Automatic intake still requires two genuine distinct consistent variants (field mean ≥95, minimum ≥90), original HD/ROI evidence, no corrected/hidden/conflicting/virtual fields, authorized customer resolution and the existing duplicate/recovery fences. The only following passes needed for a valid first result are small-region verification, not repeated whole-photo recognition.
-
-A true single-evidence automatic-intake policy is **not introduced**. One compressed screenshot cannot justify relaxing server gates, particularly for automatic customer creation. No production SQL/RLS change is necessary. A future lower/one-pass policy needs a separately reviewed implementation, diverse original real labels and negative cases, isolated transaction/permission testing and a verified recovery path before any production schema change.
+The user changed the requirement to **automatic filling, manual intake** after the initial automatic-intake discussion. This latest instruction supersedes the earlier automatic requirement. The V63 camera flow never calls intake after OCR. Legacy photo recognition is also manual-confirmation-only; its old automatic opt-in is disabled without changing the layout. A reliable first result stops immediately; insufficient/conflicting results trigger bounded enhancement, preferably on the small field region. Existing controls fill for review, and the existing Confirm Intake button is the only save path. Unusable/unsafe parses do not populate a guessed phone. There is no new database gate, threshold relaxation or fabricated manual confirmation; real user confirmation calls the existing authorized manual RPC path. Legacy server automatic gates remain unchanged for compatibility with old clients.
 
 ## Actual provided image
 
@@ -32,7 +30,7 @@ Candidate actual WASM, first frame plus small-region verification:
 
 Local worker initialization was approximately 0.50–0.63 seconds in these runs; this excludes first-ever public-network model download. The 1–2 second target is met for this **one real screenshot ROI in cloud browsers**, not proven for actual phones or Myanmar carriers. Four additional synthetic names/formats, each twice, were correct; the existing six-format real-WASM regressions are also retained. These counts are not a general field accuracy percentage.
 
-The screenshot has low field confidence and insufficient original HD provenance. It correctly remains **manual confirmation**, despite correct extraction. It is not an automatic-intake acceptance case. High-confidence HD automatic-intake behavior is preserved and exercised by camera/transport simulations plus unchanged isolated SQL gate tests; no real-device automatic creation or production writes are claimed.
+The screenshot has low field confidence and insufficient original HD provenance. It is correctly filled for **manual confirmation**, not an automatic-intake acceptance case. Browser tests explicitly verify zero writes after a successful single pass, and save only after clicking Confirm Intake. No real-device creation or production writes are claimed.
 
 ## Reproducible private real-image test
 
@@ -40,4 +38,4 @@ The screenshot has low field confidence and insufficient original HD provenance.
 
 Manifest format: `{"images":[{"path":"/private/path/frame.png","name":"expected name","phone":"expected phone","source":"real screenshot or original photo"}]}`. Expected fields are compared in Python **after** recognition, never sent to the engine. The output reports only image hash, correctness, timing, pass count and proof status, not contact text. Do not commit the manifest, images or private full-text debug logs. `--scalar` forces non-SIMD feature detection in the test-only local worker response, verifying the actual scalar fallback.
 
-Local validation: 213 unit tests and syntax checks passed; disposable PostgreSQL V57–V62 RLS/permissions, duplicate/concurrency, freight/debt and rollback tests passed; built Chromium/WebKit camera orchestration, true two-variant automatic intake, recovery and manual controls passed. Production deployment requires all CI checks. Physical iPhone/Android camera capture, focus/orientation and original-HD real label tests remain unperformed and must be reported as such. Reopen the PWA to obtain new fingerprinted code; first model/core download may still be slow on weak networks.
+Local validation: 213 unit tests and syntax checks passed; disposable PostgreSQL V57–V62 RLS/permissions, duplicate/concurrency, freight/debt and rollback tests passed; built Chromium/WebKit camera orchestration, successful single-pass filling without writes, explicit manual intake, recovery and manual controls passed. Production deployment requires all CI checks. Physical iPhone/Android camera capture, focus/orientation and original-HD real label tests remain unperformed and must be reported as such. Reopen the PWA to obtain new fingerprinted code; first model/core download may still be slow on weak networks.

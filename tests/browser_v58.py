@@ -32,11 +32,11 @@ with sync_playwright() as p:
  # Actual UI photo path, high-confidence engine and independent barcode mocked independently.
  pg.evaluate("async()=>{await TDAssets.barcode()}")
  pg.evaluate('tdV58Reset()');pg.evaluate("""()=>{window.__lost=false;__state='new';TDLabelOCR.recognize=async()=>({text:'运单号: TD12345678\\n收件人: 安康\\n手机号: 09943253053',confidence:99,minConfidence:96});ZXing.BrowserMultiFormatReader.prototype.decodeFromImageUrl=async()=>({getText:()=>'TD12345678'})}""")
- pg.locator('#tdV58Auto').check();pg.locator('#tdV58Create').check();pg.locator('#tdV58Photo').set_input_files(str(ROOT/'icon-512.png'));pg.wait_for_function('window.__photo===true && !tdLabel.busy')
- assert pg.locator('#tdScanInput').input_value()=='';last=pg.evaluate("__v58.filter(x=>x.name==='td_label_intake_v58').at(-1)");assert last['args']['p_confirmed'] is False;assert last['args']['p_payload']['allow_create'] is True
+ assert pg.locator('#tdV58Auto').is_disabled();pg.locator('#tdV58Create').check();count=pg.evaluate("__v58.filter(x=>['td_label_intake_v58','td_intake_v62'].includes(x.name)).length");pg.locator('#tdV58Photo').set_input_files(str(ROOT/'icon-512.png'));pg.wait_for_function('!!tdLabel.parsed&&!tdLabel.busy');assert pg.evaluate("__v58.filter(x=>['td_label_intake_v58','td_intake_v62'].includes(x.name)).length")==count;pg.evaluate('tdV58Commit(true)');assert pg.evaluate("__v58.filter(x=>['td_label_intake_v58','td_intake_v62'].includes(x.name)).length")==count;pg.locator('#tdV58Commit').click();pg.wait_for_function('window.__photo===true && !tdLabel.busy')
+ assert pg.locator('#tdScanInput').input_value()=='';last=pg.evaluate("__v58.filter(x=>['td_label_intake_v58','td_intake_v62'].includes(x.name)).at(-1)");assert last['args']['p_confirmed'] is True;assert last['name']=='td_intake_v62';assert last['args']['p_payload']['name']=='安康' and last['args']['p_payload']['phone']=='09943253053' and last['args']['p_payload']['tracking_no']=='TD12345678'
  # Parcel-edit dialog must not survive logout/session reset.
  pg.evaluate("()=>{tdNavigate('parcels');data.td_parcels[0].pieces=2;data.td_parcels[0].remaining=2;tdParcelEditV58(data.td_parcels[0].id)}")
  assert pg.locator('#tdParcelEditDialog').is_visible()
  pg.evaluate('tdClearSessionView()');assert not pg.locator('#tdParcelEditDialog').is_visible();assert pg.locator('#tdParcelEditDialog').inner_text()==''
  assert errors==[],errors
- print(json.dumps({'engine':engine,'manual_masked_conflict_offline_lost_response_fence':True,'auto_intake_photo_customer_optin':True,'errors':errors}));b.close()
+ print(json.dumps({'engine':engine,'manual_masked_conflict_offline_lost_response_fence':True,'photo_fills_manual_confirmation_only':True,'errors':errors}));b.close()

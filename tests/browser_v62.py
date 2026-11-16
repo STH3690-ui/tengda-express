@@ -33,19 +33,19 @@ with sync_playwright() as p:
  assert pg.locator('#tdCaptureFrozen').is_visible();assert not pg.locator('#tdLiveVideo').is_visible();assert pg.evaluate('__beeps===1')
  assert pg.evaluate("document.getElementById('tdCaptureFrozen').width")>=1600
  assert not any(x['name']=='td_intake_v62' for x in pg.evaluate('__liveCalls'))
- pg.evaluate('__hold=false;__releaseOCR()');pg.wait_for_function("tdPhoto.phase==='success' && !tdPhoto.processing && !tdLive.busy")
+ pg.evaluate('__hold=false;__releaseOCR()');pg.wait_for_function("tdPhoto.phase==='review' && !tdPhoto.processing && !tdLive.busy");assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length")==0;pg.evaluate('tdV59Commit(false)');assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length")==0;pg.locator('#tdLiveManual').click();pg.wait_for_function("tdPhoto.phase==='success' && !tdLive.busy")
  assert pg.locator('#tdLiveName').input_value()=='安康';assert pg.locator('#tdLivePhone').input_value()=='09943253053'
- assert pg.evaluate('__captureCalls')==2
+ assert pg.evaluate('__captureCalls')==1
  pg.wait_for_function("tdPhoto.phase==='preview' && tdLive.running");pg.wait_for_timeout(1200)
- assert pg.evaluate('__captureCalls')==2;assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length")==1
+ assert pg.evaluate('__captureCalls')==1;assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length")==1
  assert pg.evaluate('(__workerStops||0)===0 && __preloads===1') # Reuse camera + worker until leaving.
  # Invalid OCR keeps photo and never guesses or submits.
  pg.evaluate("__text='地址: (李明138****8000)'");pg.locator('#tdPhotoShutter').click();pg.wait_for_function("tdPhoto.phase==='review' && !tdPhoto.processing")
- assert pg.locator('#tdCaptureFrozen').is_visible();assert pg.evaluate('__captureCalls')==5;assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length")==1
+ assert pg.locator('#tdCaptureFrozen').is_visible();assert pg.evaluate('__captureCalls')==4;assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length")==1
  pg.locator('#tdLiveName').fill('李明');pg.locator('#tdLivePhone').fill('09922222222');pg.evaluate("tdScan.rows=[{tracking_no:'LEGACY001'}]");count=pg.evaluate('__liveCalls.length');pg.locator('#tdLiveManual').click();assert pg.evaluate('__liveCalls.length')==count;pg.evaluate('tdScan.rows=[]');pg.locator('#tdLiveManual').click();pg.wait_for_function("tdPhoto.phase==='success' && !tdLive.busy")
  assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').at(-1).args.p_confirmed") is True
  # Response loss: no new intake until request reconciliation.
- pg.wait_for_function("tdPhoto.phase==='preview'");pg.evaluate("__text='地址: (Aung Kyaw09933333333)';__lost=true");pg.locator('#tdPhotoShutter').click();pg.wait_for_function('!!tdLive.pending && !tdLive.busy && !tdPhoto.processing')
+ pg.wait_for_function("tdPhoto.phase==='preview'");pg.evaluate("__text='地址: (Aung Kyaw09933333333)';__lost=true");pg.locator('#tdPhotoShutter').click();pg.wait_for_function("tdPhoto.phase==='review'&&!tdPhoto.processing");pg.locator('#tdLiveManual').click();pg.wait_for_function('!!tdLive.pending && !tdLive.busy && !tdPhoto.processing')
  n=pg.evaluate('__liveCalls.length');pg.locator('#tdLiveManual').click(force=True);assert pg.evaluate('__liveCalls.length')==n
  pg.locator('#tdLiveResolve').click();pg.wait_for_function("!tdLive.pending && tdPhoto.phase==='success' && !tdLive.busy")
  assert pg.locator('#tdLivePhone').input_value()=='09933333333'
@@ -58,7 +58,7 @@ with sync_playwright() as p:
  pg.evaluate("""()=>{__text='地址: (Aung Win09955555555)';tdLive.edited=false;const old=navigator.mediaDevices.getUserMedia;navigator.mediaDevices.getUserMedia=async opts=>{const stream=await old(opts);const track={enabled:true,stop(){__stops++},getCapabilities(){return {}}};stream.getVideoTracks=()=>[track];return stream};window.ImageCapture=class {takePhoto(){return new Promise(ok=>{window.__nativeRelease=()=>{const c=document.createElement('canvas');c.width=3200;c.height=2400;c.getContext('2d').fillRect(0,0,3200,2400);c.toBlob(ok,'image/jpeg')}})}}}""")
  pg.locator('#tdPhotoShutter').click();pg.wait_for_function('tdLive.running');base=pg.evaluate('__captureCalls');pg.locator('#tdPhotoShutter').click();pg.wait_for_function('!!window.__nativeRelease');assert pg.locator('#tdCaptureFrozen').is_visible();assert pg.evaluate('__captureCalls')==base
  pg.evaluate('tdV61Shutter()');assert pg.evaluate('__captureCalls')==base
- pg.evaluate('__nativeRelease()');pg.wait_for_function("tdPhoto.phase==='success' && !tdLive.busy && !tdPhoto.processing")
+ pg.evaluate('__nativeRelease()');pg.wait_for_function("tdPhoto.phase==='review'&&!tdPhoto.processing");beforeNative=pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length");pg.wait_for_timeout(200);assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length")==beforeNative;pg.locator('#tdLiveManual').click();pg.wait_for_function("tdPhoto.phase==='success' && !tdLive.busy && !tdPhoto.processing")
  proof=pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').at(-1).args.p_payload");assert proof['source_kind']=='native_photo' and proof['source_width']==3200 and proof['source_height']==2400,{'proof':proof,'source':pg.evaluate('tdPhoto.source'), 'messages':pg.locator('#tdCaptureText').inner_text()}
  pg.wait_for_function("tdPhoto.phase==='preview'")
  # Low resolution original video cannot silently submit thumbnail OCR.
@@ -71,4 +71,4 @@ with sync_playwright() as p:
  # Zero-paid pickup is debt, but must send an existing legal payment method.
  pg.evaluate("""()=>{const old=db.rpc.bind(db);db.rpc=async(name,args)=>{if(name==='td_scan_checkout_v57'){window.__zeroPaid=args.p_payload;return {data:{success:true,batch_id:'zero-paid-test'}}}return old(name,args)};tdScan.rows.forEach(r=>r.customer_id='weigh-customer')}""")
  pg.locator('#tdScanWeight').fill('2');pg.locator('#tdScanName').fill('Debt Receiver');pg.locator('#tdScanPaid').fill('0');pg.get_by_role('button',name='确认收款并完成取件',exact=True).click();pg.wait_for_function('!!window.__zeroPaid && !tdScan.busy');assert pg.evaluate('__zeroPaid.method')=='现金';assert pg.evaluate('__zeroPaid.paid')==0
- assert errors==[],errors;print(json.dumps({'engine':engine,'selected_customer_and_editable_metadata':True,'known_weight_sum_and_unknown_requires_weighing':True,'zero_paid_uses_legal_method':True,'manual_shutter_only':True,'hd_freeze_before_ocr':True,'native_hd_photo_and_low_resolution_guard':True,'two_variant_agreement':True,'automatic_return_no_auto_shutter':True,'worker_reuse':True,'failed_image_manual_edit':True,'lost_response_recovery':True,'offline_no_writes':True,'late_result_cancel':True,'errors':errors}));b.close()
+ assert errors==[],errors;print(json.dumps({'engine':engine,'selected_customer_and_editable_metadata':True,'known_weight_sum_and_unknown_requires_weighing':True,'zero_paid_uses_legal_method':True,'manual_shutter_only':True,'hd_freeze_before_ocr':True,'native_hd_photo_and_low_resolution_guard':True,'single_pass_autofill_manual_intake':True,'automatic_return_no_auto_shutter':True,'worker_reuse':True,'failed_image_manual_edit':True,'lost_response_recovery':True,'offline_no_writes':True,'late_result_cancel':True,'errors':errors}));b.close()
