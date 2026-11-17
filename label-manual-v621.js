@@ -1,7 +1,7 @@
 /* Fix the actual legacy label component, not the separate HD-photo form. No schema changes. */
 const tdV621={selected:null,manual:false,search:0};
 function tdV621Ready(){return !!$('tdV621Name')?.value.trim()&&!!(tdV621.selected||TDLabelV58.normalizePhone($('tdV621Phone')?.value||''))}
-function tdV621Controls(){const blocked=tdLabel.busy||!!tdLabel.pending||tdScan.busy||tdScan.uncertain;for(const id of ['tdV621CustomerTerm','tdV621CustomerSearch','tdV621Name','tdV621Phone','tdV58Pieces','tdV58Weight','tdV58Upload','tdV621OCR','tdV58Text','tdV58Photo','tdV58Auto','tdV58Create'])if($(id))$(id).disabled=blocked;if($('tdV58Commit'))$('tdV58Commit').disabled=blocked||(tdV621.manual?!tdV621Ready():!tdLabel.parsed?.match||tdLabel.parsed.match.status==='review'||!tdLabel.parsed.eligible_for_auto_intake||!tdLabel.cap?.intake||(tdLabel.parsed.match.status==='new'&&!tdLabel.cap?.create_customer))}
+function tdV621Controls(){const blocked=tdLabel.busy||!!tdLabel.pending||tdScan.busy||tdScan.uncertain;for(const id of ['tdV621CustomerTerm','tdV621CustomerSearch','tdV621Name','tdV621Phone','tdV58Pieces','tdV58Weight','tdV58Upload','tdV621OCR','tdV58Text','tdV58Photo','tdV58Auto','tdV58Create'])if($(id))$(id).disabled=blocked||id==='tdV58Auto';if($('tdV58Auto'))$('tdV58Auto').checked=false;if($('tdV58Commit'))$('tdV58Commit').disabled=blocked||(tdV621.manual?!tdV621Ready():!tdLabel.parsed?.match||tdLabel.parsed.match.status==='review'||!tdLabel.parsed.eligible_for_auto_intake||!tdLabel.cap?.intake||(tdLabel.parsed.match.status==='new'&&!tdLabel.cap?.create_customer))}
 function tdV621Edited(){tdV621.selected=null;tdV621.manual=true;tdLabel.revision=(tdLabel.revision||0)+1;tdLabel.parsed=null;tdLabel.evidence={...tdLabel.evidence,edited:true};tdV621Controls();tdV58Message('已使用手填资料；保存时自动匹配，无冲突且有权限才新建，不覆盖旧客户档案')}
 function tdV621MetaEdited(){if($('tdV621Name')?.value||$('tdV621Phone')?.value){tdV621.manual=true;tdLabel.evidence={...tdLabel.evidence,edited:true}}tdLabel.revision=(tdLabel.revision||0)+1;tdV621Controls()}
 async function tdV621Search(){
@@ -18,6 +18,7 @@ const tdV621OldRead=tdV58ReadPhoto;
 tdV58ReadPhoto=async function(input){if(!$('tdV621OCR')?.checked){if(tdLabel.busy||tdLabel.pending||tdScan.busy||tdScan.uncertain)return;const file=input.files?.[0];if(!file)return;if(!file.type.startsWith('image/')||file.size>10*1024*1024){input.value='';return tdV58Message('仅支持不超过10MB的照片')}tdLabel.file=file;tdLabel.evidence={edited:true};tdV58Message('照片已保留，无需OCR；选择或填写客户后确认入库，按照片保存选项处理');tdV621Controls();return}const task=tdV621OldRead(input);tdV621Controls();try{return await task}finally{tdV621Controls()}};
 const tdV621OldCommit=tdV58Commit;
 tdV58Commit=async function(automatic=false){
+ if(automatic)return tdV58Message('V63 识别仅填充，请点击确认入库');
  if(!tdV621.manual){const task=tdV621OldCommit(automatic);tdV621Controls();try{return await task}finally{tdV621Controls()}}
  if(automatic)return tdV58Message('已选或手填资料必须人工确认');
  if(page!=='scanIntake'||tdLabel.busy||tdLabel.pending||tdScan.busy||tdScan.uncertain||tdScan.queued||tdScan.rows.length||tdLive.busy||tdLive.pending||!navigator.onLine)return tdV58Message('请先完成/核实当前请求或待入库清单；离线不提交');

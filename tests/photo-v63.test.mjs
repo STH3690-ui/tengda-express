@@ -1,0 +1,16 @@
+import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import {readFileSync} from 'node:fs';
+const c=vm.createContext({module:{exports:{}}});for(const file of ['label-v58.js','capture-core-v60.js','photo-core-v61.js','photo-core-v63.js'])vm.runInContext(readFileSync(file,'utf8'),c);const {parse,region,fastAccept}=c.TDPhotoV63;
+for(const text of ['地址: 云南转运仓 138****8000（李明+09912345678）','地址: 广东转运仓（张三09912345678）\n寄件人: 李四13911111111','(Aung Kyaw+95 912345678)','客户姓名: 王小明\n手机号: 09912345678','（赵云+၀၉၉၁၂၃၄၅၆၇၈）'])test('recipient suffix '+text,()=>{const p=parse(text);assert.equal(p.eligible,true,JSON.stringify(p));assert.ok(p.name);assert.match(p.phone,/^(09|1)/)});
+for(const text of ['寄件地址: 广东仓（李明09912345678）','地址: (张三09912345678) (李四09922222222)','运单号: 13912345678','地址: 仓库09912345678','客户: (张三17000138000)','客户: (张三099****5678)','客户: (张三O9912345678)','客户: (Alice+12025550123)'])test('unsafe remains review '+text,()=>assert.equal(parse(text).eligible,false));
+test('frame maps cover offset and original still sensor crop, including viewport origin',()=>{const r=region(4000,3000,{left:10,top:30,width:400,height:200},{left:50,top:60,width:320,height:140},1920,1080);assert.ok(Math.abs(r.x-400)<.01);assert.ok(Math.abs(r.y-800)<.01);assert.ok(Math.abs(r.w-3200)<.01);assert.ok(Math.abs(r.h-1400)<.01)});
+test('invalid/zero hidden guide cannot fall back to unrelated full photo',()=>assert.throws(()=>region(4000,3000,{left:0,top:0,width:0,height:0},{left:0,top:0,width:0,height:0})));
+test('fast fill requires covered conservative confidence; never relaxes auto-intake proof',()=>{const p=parse('(张三09912345678)'),read={parsed:p,evidence:{confidence:95,minConfidence:90}};assert.equal(fastAccept(read),true);assert.equal(c.TDPhotoV61.select([{...read,variant:'raw'}]).automatic,false);assert.equal(fastAccept({...read,evidence:{confidence:99,minConfidence:50}}),false);assert.equal(fastAccept({...read,parsed:{...p,corrected:true}}),false)});
+
+test('suffix fields retain real word confidence when OCR joins the whole address line',()=>{const p=parse('地址: 云南转运仓（赵云09912345678）');const e=c.TDPhotoV61.evidence({words:[{text:'云南转运仓（赵云09912345678）',confidence:96}]},p);assert.equal(e.confidence,96);assert.equal(c.TDPhotoV61.evidence({words:[{text:'另一个地址12345',confidence:99}]},p).confidence,0)});
+
+test('address-tail bracket precedes a separate routing-code phone row',()=>{const p=parse('云南省昆明市金马街道\n彩云北路2978号 物流城\n9—10 〈王小明+09912345678) -\nE88 18000000000 长沙市');assert.equal(p.name,'王小明');assert.equal(p.phone,'09912345678');assert.equal(p.eligible,true)});
+test('an unexplained second customer line never loses its conflict',()=>assert.equal(parse('(李明09912345678)\n王五09922222222').eligible,false));
+
+test('phone groups may wrap within an address suffix bracket',()=>{const p=parse('昆明市官渡区彩云北路\n（李明+09 9123 45678）\nE88 18000000000 长沙市');assert.equal(p.eligible,true);assert.equal(p.name,'李明');assert.equal(p.phone,'09912345678')});
+
+test('verification cannot crop only one field when word evidence misses the phone',()=>{const p=parse('(张三09912345678)');assert.equal(c.TDPhotoV63.verificationRegion({words:[{text:'张三',confidence:99,bbox:{x0:1,y0:1,x1:20,y1:20}}]},p,{width:100,height:50},{width:100,height:50}),null)});

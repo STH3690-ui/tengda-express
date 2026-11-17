@@ -6,7 +6,7 @@ if(!html.includes("const TD_SUPABASE_URL='https://yvsgawbbnyeyvynwghsc.supabase.
 if(html.includes('amknufvdvqfhrgtobpwg'))throw new Error('Test project reference in production HTML');
 if(/sb_secret_|SUPABASE_SERVICE_ROLE_KEY/.test(html))throw new Error('Privileged credential reference in production HTML');
 await rm('dist',{recursive:true,force:true});await mkdir('dist/vendor',{recursive:true});
-for(const file of ['photo-thumbs-v624.js','paged-data-v624.js','asset-loader-v624.js','brand-mark.webp','tengda-header.webp','index.html','navigation.js','scan-core.js','label-v58.js','label-ocr-v58.js','label-ui-v58.js','live-core-v59.js','live-ui-v59.js','live-v59.css','capture-core-v60.js','photo-core-v61.js','photo-ui-v61.js','capture-v60.css','photo-v61.css','intake-core-v62.js','intake-ui-v62.js','intake-v62.css','label-manual-v621.js','compact-ui-v622.js','compact-v622.css','unified-ui-v623.js','unified-v623.css','scan.js','scan.css','vendor/zxing-0.21.3.min.js','vendor/zxing-LICENSE','brand-interface.css','mobile-adaptation.css','app-icon.svg','tengda-header.jpg','tengda-staff-auth-v32.js','td-cleanup-ui.js','vendor/supabase-2.49.8.min.js','_headers'])await copyFile(file,'dist/'+file);
+for(const file of ['photo-core-v63.js','photo-thumbs-v624.js','paged-data-v624.js','asset-loader-v624.js','brand-mark.webp','tengda-header.webp','index.html','navigation.js','scan-core.js','label-v58.js','label-ocr-v58.js','label-ui-v58.js','live-core-v59.js','live-ui-v59.js','live-v59.css','capture-core-v60.js','photo-core-v61.js','photo-ui-v61.js','capture-v60.css','photo-v61.css','intake-core-v62.js','intake-ui-v62.js','intake-v62.css','label-manual-v621.js','compact-ui-v622.js','compact-v622.css','unified-ui-v623.js','unified-v623.css','scan.js','scan.css','vendor/zxing-0.21.3.min.js','vendor/zxing-LICENSE','brand-interface.css','mobile-adaptation.css','app-icon.svg','tengda-header.jpg','tengda-staff-auth-v32.js','td-cleanup-ui.js','vendor/supabase-2.49.8.min.js','_headers'])await copyFile(file,'dist/'+file);
 // Include existing PWA assets when present; never publish backups, SQL or server code.
 for(const file of ['manifest.webmanifest','sw.js','icon-180.png','icon-192.png','icon-512.png']){
  try{await copyFile(file,'dist/'+file);}catch(e){if(e.code!=='ENOENT')throw e;}
@@ -18,7 +18,7 @@ await cp('vendor/tesseract-v6','dist/vendor/tesseract-v6',{recursive:true});
 
 const commit=(process.env.COMMIT_REF||'').trim();
 if(commit&&!/^[a-f0-9]{40}$/i.test(commit))throw Error('Invalid release commit');
-await writeFile('dist/release.json',JSON.stringify({version:'V62.4',commit:commit||null})+'\n');
+await writeFile('dist/release.json',JSON.stringify({version:'V63',commit:commit||null})+'\n');
 
 // Preserve classic-script globals and inline handlers. Only whitespace/syntax are minified.
 // Extract scripts BEFORE styles, because view templates contain literal style/link markup.
@@ -45,4 +45,4 @@ await writeFile('dist/index.html',output);
 // Exact release shell; excludes API, signed photos, workers, language models and all business responses.
 const shell=['/','/manifest.webmanifest','/app-icon.svg','/brand-mark.webp','/tengda-header.webp','/vendor/supabase-2.49.8.min.js',jsPath,cssPath];
 let sw=await readFile('sw.js','utf8');sw=sw.replace('__TD_SHELL_VERSION__',hash(output)).replace(/\/\*__TD_SHELL_FILES__\*\/\[[^\]]*\]/,JSON.stringify(shell));await writeFile('dist/sw.js',sw);
-console.log(JSON.stringify({version:'V62.4',jsBytes:Buffer.byteLength(compactJS.code),cssBytes:Buffer.byteLength(compactCSS.code),jsPath,cssPath}));
+console.log(JSON.stringify({version:'V63',jsBytes:Buffer.byteLength(compactJS.code),cssBytes:Buffer.byteLength(compactCSS.code),jsPath,cssPath}));
