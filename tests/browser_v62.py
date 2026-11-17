@@ -33,7 +33,7 @@ with sync_playwright() as p:
  assert pg.locator('#tdCaptureFrozen').is_visible();assert not pg.locator('#tdLiveVideo').is_visible();assert pg.evaluate('__beeps===1')
  assert pg.evaluate("document.getElementById('tdCaptureFrozen').width")>=1600
  assert not any(x['name']=='td_intake_v62' for x in pg.evaluate('__liveCalls'))
- pg.evaluate('__hold=false;__releaseOCR()');pg.wait_for_function("tdPhoto.phase==='review' && !tdPhoto.processing && !tdLive.busy");assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length")==0;pg.evaluate('tdV59Commit(false)');assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length")==0;pg.locator('#tdLiveManual').click();pg.wait_for_function("tdPhoto.phase==='success' && !tdLive.busy")
+ pg.evaluate('__hold=false;__releaseOCR()');pg.wait_for_function("tdPhoto.phase==='review' && !tdPhoto.processing && !tdLive.busy");assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length")==0;assert pg.evaluate("tdPhoto.timings.passes===1 && Number.isFinite(tdPhoto.timings.total_ms) && tdPhoto.timings.fill_ms>=0");pg.evaluate('tdV59Commit(false)');assert pg.evaluate("__liveCalls.filter(x=>x.name==='td_intake_v62').length")==0;pg.locator('#tdLiveManual').click();pg.wait_for_function("tdPhoto.phase==='success' && !tdLive.busy")
  assert pg.locator('#tdLiveName').input_value()=='安康';assert pg.locator('#tdLivePhone').input_value()=='09943253053'
  assert pg.evaluate('__captureCalls')==1
  pg.wait_for_function("tdPhoto.phase==='preview' && tdLive.running");pg.wait_for_timeout(1200)

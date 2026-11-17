@@ -14,3 +14,5 @@ test('an unexplained second customer line never loses its conflict',()=>assert.e
 test('phone groups may wrap within an address suffix bracket',()=>{const p=parse('昆明市官渡区彩云北路\n（李明+09 9123 45678）\nE88 18000000000 长沙市');assert.equal(p.eligible,true);assert.equal(p.name,'李明');assert.equal(p.phone,'09912345678')});
 
 test('verification cannot crop only one field when word evidence misses the phone',()=>{const p=parse('(张三09912345678)');assert.equal(c.TDPhotoV63.verificationRegion({words:[{text:'张三',confidence:99,bbox:{x0:1,y0:1,x1:20,y1:20}}]},p,{width:100,height:50},{width:100,height:50}),null)});
+
+test('V63.1 raw path borrows the original small frame without changing or owning its pixels',()=>{const source={width:562,height:202};const prepared=c.TDPhotoV63.prepare(source,'raw');assert.equal(prepared.canvas,source);assert.equal(prepared.owned,false);assert.equal(source.width,562)});
