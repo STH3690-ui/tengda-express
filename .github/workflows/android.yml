@@ -10,8 +10,23 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Load release signing key
+        if: github.event_name != 'pull_request'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_BASE64" && test -n "$STORE_PASSWORD" && test -n "$KEY_PASSWORD" && test -n "$KEY_ALIAS" || { echo 'Missing signing secrets: follow android/README.md. Refusing an unsigned release.'; exit 1; }
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/tengda-release.p12"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -27,20 +42,12 @@ jobs:
       - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - run: npm ci --ignore-scripts
         working-directory: android
+      - run: python3 tests/android_release_preflight.py
       - run: npm run generate
         working-directory: android
-      - name: Load release signing key
+      - name: Verify production release identity
         if: github.event_name != 'pull_request'
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-        run: |
-          set -euo pipefail
-          test -n "$KEYSTORE_BASE64" && test -n "$STORE_PASSWORD" && test -n "$KEY_PASSWORD" && test -n "$KEY_ALIAS" || { echo 'Missing signing secrets: follow android/README.md. Refusing an unsigned release.'; exit 1; }
-          umask 077
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/tengda-release.p12"
+        run: python3 android/verify-production.py
       - name: Build APK and AAB
         working-directory: android/project
         env:
@@ -56,7 +63,7 @@ jobs:
           python3 android/verify-release.py android/project/app/build/outputs/apk/release/app-release.apk android/project/app/build/outputs/bundle/release/app-release.aab
       - uses: actions/upload-artifact@v4
         with:
-          name: tengda-android-${{ github.sha }}
+          name: tengda-android-${{ github.sha }}${{ github.event_name == 'pull_request' && '-UNSIGNED-NOT-INSTALLABLE' || '' }}
           path: |
             android/project/app/build/outputs/apk/release/*.apk
             android/project/app/build/outputs/bundle/release/*.aab
@@ -73,7 +80,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: tengda-android-${{ github.sha }}
+          name: tengda-android-${{ github.sha }}${{ github.event_name == 'pull_request' && '-UNSIGNED-NOT-INSTALLABLE' || '' }}
           path: artifacts
       - name: Publish verified release artifacts
         env:
@@ -83,4 +90,4 @@ jobs:
           find artifacts -name '*.apk' -exec cp {} tengda-express.apk \;
           find artifacts -name '*.aab' -exec cp {} tengda-express.aab \;
           sha256sum tengda-express.apk tengda-express.aab > SHA256SUMS.txt
-          gh release create "$GITHUB_REF_NAME" tengda-express.apk tengda-express.aab SHA256SUMS.txt --repo "$GITHUB_REPOSITORY" --verify-tag --title "腾达快递站 $GITHUB_REF_NAME" --notes 'Official signed TWA. Android 7.0+, compatible TWA browser required. Uses the existing production PWA and original fox icon.'
+          gh release create "$GITHUB_REF_NAME" tengda-express.apk tengda-express.aab SHA256SUMS.txt --repo "$GITHUB_REPOSITORY" --draft --verify-tag --title "腾达快递站 $GITHUB_REF_NAME" --notes 'Signed Android shell for the current production PWA. DRAFT: installation, authenticated login, camera/photo picker and barcode checks must be verified before public promotion. Android 7.0+ and a compatible TWA browser required; universal shell supports arm64. Retains the original signing identity and black/gold fox icon.'

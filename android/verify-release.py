@@ -1,5 +1,5 @@
 """Fail release verification unless both artifact signatures match the published DAL identity."""
-import hashlib,json,subprocess,sys,zipfile
+import hashlib,json,re,subprocess,sys,zipfile
 from pathlib import Path
 cfg=json.loads((Path(__file__).parent/'release-config.json').read_text())
 apk,aab=map(Path,sys.argv[1:3])
@@ -12,5 +12,11 @@ pem=subprocess.check_output(['keytool','-printcert','-jarfile',str(aab),'-rfc'])
 der=subprocess.check_output(['openssl','x509','-outform','DER'],input=pem)
 assert hashlib.sha256(der).hexdigest()==expected,'AAB certificate differs from APK/DAL'
 assert zipfile.is_zipfile(apk) and zipfile.is_zipfile(aab)
+badging=subprocess.check_output(['aapt','dump','badging',str(apk)],text=True)
+assert re.search(r"package: name='"+re.escape(cfg['packageId'])+r"' versionCode='"+str(cfg['versionCode'])+r"' versionName='"+re.escape(cfg['versionName'])+r"'",badging),'APK package/version is not the requested release'
+assert "sdkVersion:'24'" in badging,'Unexpected minimum Android API'
+with zipfile.ZipFile(apk) as z:
+ assert not any(n.startswith('lib/') and n.endswith('.so') for n in z.namelist()),'Unexpected ABI-specific native code: review arm64 compatibility'
+print('Verified APK version, package, API24+, and ABI-independent TWA shell (arm64 compatible).')
 for p in (apk,aab):print(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}')
 print('Verified release APK and AAB; signing certificate matches published Digital Asset Links.')

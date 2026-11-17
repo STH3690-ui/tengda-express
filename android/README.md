@@ -2,7 +2,7 @@
 
 - 网站：https://tengda-express-station.netlify.app/
 - 包名：`com.tengda.express`；App/桌面名称：`腾达快递站`。
-- 首版：3.2.0，versionCode 32000；Android 7.0/API 24 起，target/compile API 36。
+- 当前 Android 外壳：63.1.0，versionCode 63100；正式网页：V63.1。原包名和签名指纹保留，可覆盖升级3.2.0；Android 7.0/API 24 起，target/compile API 36。
 - 官方 Bubblewrap CLI/Core 1.27.0 生成标准 Android TWA；Android Browser Helper 2.7.4、AGP 8.11.1、Gradle 8.13。该版 Helper 的最低 API 为24，未强制忽略库限制。
 - 不含任何原生 CPU 库，无 ABI 或触屏硬件限制，支持手机、平板、旋转和多窗口。横竖屏由系统和网页自动适配。
 - 原图标 `icon-512.png` 不改动、不重绘。脚本核对其 SHA-256 后仅生成 Android 所需密度资源。公钥证书和 DAL 指纹可公开，私钥/密码绝不可公开。
@@ -30,7 +30,9 @@ export ANDROID_KEY_ALIAS=tengda-release
 
 ## 一次性 GitHub Secrets 设置（当前连接没有 Secrets 写入权限）
 
-此次已生成正式 PKCS12 签名密钥，保存在任务工作区外部私有目录 `/workspace/shared/tengda-android-signing/`，权限为目录700/文件600。**立即分别下载 `tengda-release.p12` 和 `keystore-password.txt`，在用户自己的密码管理器/离线加密存储中持久备份；临时工作区不保证长期保留。不要把它们上传为 Release 附件，也不要提交仓库。**今后更新必须复用同一密钥，丢失后无法覆盖升级当前安装包。
+旧版 PKCS12 私钥不在当前工作区，当前 GitHub 连接没有 Secrets 管理权限。2026-11-17 已实际触发正式 Actions，确认四项 Secrets 缺失，构建按设计在签名步骤失败。**不能从公钥证书或旧 APK 恢复私钥，也不能换新密钥冒充可覆盖升级版。**
+
+请从用户自己的离线加密备份/密码管理器找回原 `tengda-release.p12` 和密码。不要上传到仓库、Issue、Release 或公开日志；临时任务工作区不能当作永久密钥备份。公钥指纹应保持 release-config.json 中现有值。
 
 仓库所有者在自己的电脑使用有本仓库 Secrets 管理权限的 gh 登录后运行：
 
@@ -50,7 +52,7 @@ bash android/configure-signing-secrets.sh /path/tengda-release.p12 /path/keystor
 
 ## GitHub Actions
 
-`.github/workflows/android.yml` 在相关PR构建 APK/AAB（无签名，不作正式发布）；workflow_dispatch 使用 Secrets 签名、验证并上传 Actions artifacts；推送 `android-v*` 标签时，先签名校验成功，再上传 APK/AAB/SHA256 到 GitHub Release。
+`.github/workflows/android.yml` 在相关PR构建 APK/AAB（无签名，不作正式发布）；workflow_dispatch 使用 Secrets 签名、验证并上传 Actions artifacts；推送 `android-v*` 标签时，先签名及版本/DAL校验成功，再上传 APK/AAB/SHA256 到 GitHub **Draft Release**。草稿不能当作正式下载链接；必须实际核对安装、登录、拍照/相册、条码及权限后才能公开。
 
 首次安装包由本次受控工作区签名并手动发布到 `v3.2.0-android` Release，不依赖尚未配置的 Actions Secrets。未来更新先递增 `release-config.json` 的 versionCode/versionName，再推送例如 `android-v3.2.1`。
 
@@ -67,3 +69,11 @@ bash android/configure-signing-secrets.sh /path/tengda-release.p12 /path/keystor
 - Chromium测试6种手机/平板横竖屏尺寸 × 9个主要页面，共54个组合，无整页横向溢出或脚本错误；测试后再次复核安全区域CSS。业务接口均模拟，不操作正式记录。
 - 已在无KVM的软件 Android 10（API29）模拟器中通过 ADB 实际安装签名APK，系统返回 Success。模拟器使用稀疏测试磁盘，未接入真实账号或业务数据。该AOSP镜像没有兼容TWA的Chrome浏览器，因此仍未完成完整TWA页面启动/无地址栏验证，也未做真机测试。首台真机应验证安装、TWA无地址栏、登录、拍照/相册上传、下载/PDF、旋转和返回键。
 - GitHub Secrets 403：需要仓库所有者按上述步骤设置。Google Play未发布；AAB为已签名的上传包，Play Console 账号/商店审核属于后续流程。
+
+## V63.1 发布验收状态
+
+- TWA直接运行正式HTTPS网站，沿用正式Supabase连接，不包含测试库配置或原生业务副本。
+- 摄像头、相册和下载由兼容浏览器及系统选择器处理；保留浏览器按站点请求相机权限，拒绝权限后仍可手动录入。无需申请整个相册、全部文件或后台相机权限。不得增加 MANAGE_EXTERNAL_STORAGE。
+- 外壳无原生 `.so`，通用APK兼容 arm64，OCR WASM由设备浏览器执行。
+- 未验证项目：新版签名APK构建、安装/覆盖升级、Android TWA启动、真实账号登录、相机/相册/扫码、实际权限请求。缺少旧签名私钥期间不得标记通过或公开正式APK。
+- iPhone配置GitHub Secrets：仓库 Settings → Secrets and variables → Actions → New repository secret，设置上面四项。BASE64应在用户本地可信电脑用已有脚本写入，勿复制到聊天。然后 Actions → Android TWA → Run workflow（main）。验收通过后再创建 `android-v63.1.0` 标签；标签发布默认草稿。
