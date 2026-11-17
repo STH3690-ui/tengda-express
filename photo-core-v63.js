@@ -33,7 +33,7 @@
  function prepare(source,variant){
   if(variant!=='raw')return TDPhotoV61.prepare(source,variant,source.tdTextHeight?{scale:48/source.tdTextHeight}:{});
   // No unconditional upscaling or full-image deskew probe on the fast path.
-  const scale=Math.min(1,1920/source.width,1400/source.height),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(source.width*scale));canvas.height=Math.max(1,Math.round(source.height*scale));canvas.getContext('2d').drawImage(source,0,0,canvas.width,canvas.height);return {canvas,angle:0,variant};
+  const scale=Math.min(1,1920/source.width,1400/source.height);if(scale===1)return {canvas:source,angle:0,variant,owned:false};const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(source.width*scale));canvas.height=Math.max(1,Math.round(source.height*scale));canvas.getContext('2d').drawImage(source,0,0,canvas.width,canvas.height);return {canvas,angle:0,variant};
  }
  function verificationRegion(result,parsed,canvas,source){
   if(!parsed.eligible||TDPhotoV61.evidence(result,parsed).confidence<=0)return null;const letters=s=>normalize(s).replace(/[^\p{L}]/gu,'').toUpperCase(),name=letters(parsed.name),phone=parsed.phone;

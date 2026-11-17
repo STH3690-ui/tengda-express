@@ -5,7 +5,8 @@ from pathlib import Path
 from PIL import Image,ImageDraw,ImageFont
 from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parents[1]
-args=argparse.ArgumentParser();args.add_argument('--manifest');args.add_argument('--output');args.add_argument('--scalar',action='store_true');options=args.parse_args()
+args=argparse.ArgumentParser();args.add_argument('--root');args.add_argument('--repeats',type=int,default=2);args.add_argument('--manifest');args.add_argument('--output');args.add_argument('--scalar',action='store_true');options=args.parse_args()
+if options.root:ROOT=Path(options.root).resolve()
 class Handler(SimpleHTTPRequestHandler):
  def log_message(self,*a):pass
  def do_GET(self):
@@ -16,19 +17,19 @@ class Handler(SimpleHTTPRequestHandler):
   self.send_header('Content-Security-Policy',next(x.strip().split(': ',1)[1] for x in (ROOT/'_headers').read_text().splitlines() if x.strip().startswith('Content-Security-Policy:')));super().end_headers()
 server=ThreadingHTTPServer(('127.0.0.1',0),functools.partial(Handler,directory=str(ROOT)));threading.Thread(target=server.serve_forever,daemon=True).start()
 PIPELINE=r'''async()=>{
- const file=document.querySelector('#fixture').files[0],url=URL.createObjectURL(file),image=new Image();let source,verification;
+ const decodeStarted=performance.now();const file=document.querySelector('#fixture').files[0],url=URL.createObjectURL(file),image=new Image();let source,verification;
  try{
   await new Promise((ok,no)=>{image.onload=ok;image.onerror=no;image.src=url});source=document.createElement('canvas');source.width=image.naturalWidth;source.height=image.naturalHeight;source.getContext('2d').drawImage(image,0,0);
-  const reads=[],start=performance.now();let firstFillMs=null;
+  const processingMs=Math.round(performance.now()-decodeStarted),reads=[],start=performance.now();let firstFillMs=null,prepareMs=0;
   for(const variant of ['raw','enhanced','binary']){
-   const prep=TDPhotoV63.prepare(variant!=='raw'&&verification?verification:source,variant);
-   try{const result=await TDLabelOCR.recognizeFrozen(prep.canvas,()=>{},{psm:variant==='binary'?11:6,timeout:10000}),parsed=TDPhotoV63.parse(result.text),evidence=TDPhotoV61.evidence(result,parsed);reads.push({variant,parsed,evidence,timing:result.timing});
+   const prepAt=performance.now(),prep=TDPhotoV63.prepare(variant!=='raw'&&verification?verification:source,variant);
+   prepareMs+=performance.now()-prepAt;try{const result=await TDLabelOCR.recognizeFrozen(prep.canvas,()=>{},{psm:variant==='binary'?11:6,timeout:10000}),parsed=TDPhotoV63.parse(result.text),evidence=TDPhotoV61.evidence(result,parsed);reads.push({variant,parsed,evidence,timing:result.timing});
     if(variant==='raw'&&parsed.eligible&&!TDPhotoV63.fastAccept(reads.at(-1)))verification=TDPhotoV63.verificationRegion(result,parsed,prep.canvas,source);
     if(firstFillMs===null&&TDPhotoV63.fastAccept(reads.at(-1)))firstFillMs=Math.round(performance.now()-start);
     const choice=TDPhotoV61.select(reads);if(choice.automatic||(!choice.conflict&&TDPhotoV63.fastAccept(reads.at(-1))))break;
-   }finally{prep.canvas.width=prep.canvas.height=1}
+   }finally{if(prep.owned!==false)prep.canvas.width=prep.canvas.height=1}
   }
-  const choice=TDPhotoV61.select(reads);return {reads,best:choice.best?.parsed,automatic_proof:choice.automatic,conflict:choice.conflict,elapsed_ms:Math.round(performance.now()-start),first_fill_ms:firstFillMs,used_targeted_verification:!!verification};
+  const choice=TDPhotoV61.select(reads),fillAt=performance.now();const name=document.querySelector('#resultName'),phone=document.querySelector('#resultPhone');name.value=choice.best?.parsed.eligible?choice.best.parsed.name:'';phone.value=choice.best?.parsed.eligible?choice.best.parsed.phone:'';const fillMs=(performance.now()-fillAt);return {reads,best:choice.best?.parsed,automatic_proof:choice.automatic,conflict:choice.conflict,elapsed_ms:Math.round(performance.now()-start),first_fill_ms:firstFillMs,processing_ms:processingMs,prepare_ms:Math.round(prepareMs),worker_wait_ms:reads.reduce((n,r)=>n+(r.timing?.worker_ready_ms||0),0),parameters_ms:reads.reduce((n,r)=>n+(r.timing?.parameters_ms||0),0),ocr_ms:reads.reduce((n,r)=>n+(r.timing?.recognize_ms||0),0),fill_ms:Math.round(fillMs*1000)/1000,fill_latency_ms:Math.round(performance.now()-decodeStarted),used_targeted_verification:!!verification};
  }finally{URL.revokeObjectURL(url);image.src='';if(source)source.width=source.height=1;if(verification)verification.width=verification.height=1}
 }'''
 with tempfile.TemporaryDirectory(prefix='v63-fixtures-') as temp,sync_playwright() as p:
@@ -41,13 +42,13 @@ with tempfile.TemporaryDirectory(prefix='v63-fixtures-') as temp,sync_playwright
  if engine=='chromium' and shutil.which('chromium'):opts['executable_path']=shutil.which('chromium')
  if engine=='webkit' and os.environ.get('TD_WEBKIT_EXECUTABLE'):opts['executable_path']=os.environ['TD_WEBKIT_EXECUTABLE']
  browser=getattr(p,engine).launch(**opts);context=browser.new_context(service_workers='block');page=context.new_page();page.set_default_timeout(90000);assets=[];context.on('request',lambda r:assets.append(r.url.rsplit('/',1)[-1]) if 'tesseract-core-' in r.url else None)
- page.goto('http://127.0.0.1:'+str(server.server_port)+'/');page.evaluate("async()=>{await TDAssets.ocr();document.body.innerHTML='<input id=fixture type=file>';window.__workers=0;const create=Tesseract.createWorker;Tesseract.createWorker=(...a)=>{__workers++;return create(...a)}}")
+ page.goto('http://127.0.0.1:'+str(server.server_port)+'/');page.evaluate("async()=>{await TDAssets.ocr();document.body.innerHTML='<input id=fixture type=file><input id=resultName><input id=resultPhone>';window.__workers=0;const create=Tesseract.createWorker;Tesseract.createWorker=(...a)=>{__workers++;return create(...a)}}")
  start=time.perf_counter();page.evaluate('async()=>{await Promise.all([TDLabelOCR.preload(),TDLabelOCR.preload()])}');cold_ms=round((time.perf_counter()-start)*1000);results=[]
  for item in items:
   page.locator('#fixture').set_input_files(item['path'])
-  for repeat in [1,2]:
+  for repeat in range(1,options.repeats+1):
    result=page.evaluate(PIPELINE);correct=result['best']['name']==item['name'] and result['best']['phone']==item['phone'];assert correct,{'image_sha256':hashlib.sha256(Path(item['path']).read_bytes()).hexdigest(),'correct':False,'elapsed_ms':result['elapsed_ms']}
-   results.append({'source':item['source'],'image_sha256':hashlib.sha256(Path(item['path']).read_bytes()).hexdigest(),'repeat':repeat,'correct':correct,'elapsed_ms':result['elapsed_ms'],'first_fill_ms':result['first_fill_ms'],'passes':len(result['reads']),'automatic_proof':result['automatic_proof'],'targeted_verification':result['used_targeted_verification']})
+   results.append({'source':item['source'],'image_sha256':hashlib.sha256(Path(item['path']).read_bytes()).hexdigest(),'repeat':repeat,'correct':correct,'elapsed_ms':result['elapsed_ms'],'first_fill_ms':result['first_fill_ms'],'passes':len(result['reads']),'automatic_proof':result['automatic_proof'],'targeted_verification':result['used_targeted_verification'],**{k:result[k] for k in ['processing_ms','prepare_ms','worker_wait_ms','parameters_ms','ocr_ms','fill_ms','fill_latency_ms']}})
  assert page.evaluate('__workers')==1
  if options.scalar:assert 'tesseract-core-lstm.wasm.js' in assets and not any('simd' in x for x in assets),assets
  report={'engine':engine,'forced_scalar':options.scalar,'core_assets':sorted(set(assets)),'cold_local_worker_ms':cold_ms,'worker_initializations':1,'results':results,'real_phone_tested':False,'production_writes':0};print(json.dumps(report))

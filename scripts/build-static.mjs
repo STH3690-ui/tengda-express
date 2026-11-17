@@ -18,7 +18,7 @@ await cp('vendor/tesseract-v6','dist/vendor/tesseract-v6',{recursive:true});
 
 const commit=(process.env.COMMIT_REF||'').trim();
 if(commit&&!/^[a-f0-9]{40}$/i.test(commit))throw Error('Invalid release commit');
-await writeFile('dist/release.json',JSON.stringify({version:'V63',commit:commit||null})+'\n');
+await writeFile('dist/release.json',JSON.stringify({version:'V63.1',commit:commit||null})+'\n');
 
 // Preserve classic-script globals and inline handlers. Only whitespace/syntax are minified.
 // Extract scripts BEFORE styles, because view templates contain literal style/link markup.
@@ -45,4 +45,4 @@ await writeFile('dist/index.html',output);
 // Exact release shell; excludes API, signed photos, workers, language models and all business responses.
 const shell=['/','/manifest.webmanifest','/app-icon.svg','/brand-mark.webp','/tengda-header.webp','/vendor/supabase-2.49.8.min.js',jsPath,cssPath];
 let sw=await readFile('sw.js','utf8');sw=sw.replace('__TD_SHELL_VERSION__',hash(output)).replace(/\/\*__TD_SHELL_FILES__\*\/\[[^\]]*\]/,JSON.stringify(shell));await writeFile('dist/sw.js',sw);
-console.log(JSON.stringify({version:'V63',jsBytes:Buffer.byteLength(compactJS.code),cssBytes:Buffer.byteLength(compactCSS.code),jsPath,cssPath}));
+console.log(JSON.stringify({version:'V63.1',jsBytes:Buffer.byteLength(compactJS.code),cssBytes:Buffer.byteLength(compactCSS.code),jsPath,cssPath}));
